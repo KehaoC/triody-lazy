@@ -1,6 +1,5 @@
 # macOS 系统文件
 .DS_Store
 
-# Xcode 用户状态文件
-frontend/lazyai/lazyai.xcodeproj/project.xcworkspace/xcuserdata/
-frontend/lazyai/lazyai.xcodeproj/project.xcworkspace/xcuserdata/kehao.xcuserdatad/UserInterfaceState.xcuserstate
+# 忽略 Xcode 用户数据
+*.xcuserstate
