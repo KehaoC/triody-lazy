@@ -65,10 +65,11 @@ def writer_chat(system_prompt, user_prompt):
     return "Something2"
 
 def searcher_chat(system_prompt, user_prompt):
-    return get_response(system_prompt, user_prompt, client="kimi")
+    return get_response(system_prompt, user_prompt, client="zhipuai")
 
 def leader_chat(system_prompt,user_prompt):
-    return get_response(system_prompt, user_prompt, client="kimi")
+    return get_response(system_prompt, user_prompt, client="zhipuai")
+
 def coder_chat(system_prompt,user_prompt):
     return "Something3"
 # 函数映射字典
@@ -87,8 +88,6 @@ class Agent:
 
     def chat(self, user_prompt):
         return self.chat_function(self.system_prompt, user_prompt)
-
-
 
 class Team:
     def __init__(self, excutors, task):
@@ -138,13 +137,12 @@ class Team:
     
     def print_result(self):
         beautyprint(self.subtasks)
-
-        
-
+    
 def main():
     team = Team([Agent("Writer", "How can I write a book?"), Agent("Searcher", searcher_system_prompt),Agent("Coder", "生成代码")], "I want to write a blog about Python.")
     team.decompose_task()
     team.run()
+    
 if __name__ == "__main__":
     main()
 
