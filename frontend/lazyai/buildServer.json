@@ -1,0 +1,19 @@
+{
+	"name": "xcode build server",
+	"version": "0.2",
+	"bspVersion": "2.0",
+	"languages": [
+		"c",
+		"cpp",
+		"objective-c",
+		"objective-cpp",
+		"swift"
+	],
+	"argv": [
+		"/opt/homebrew/bin/xcode-build-server"
+	],
+	"workspace": "/Users/kehao/CodeSpace/triody-lazy/frontend/LazyAI/LazyAI.xcodeproj/project.xcworkspace",
+	"build_root": "/Users/kehao/Library/Developer/Xcode/DerivedData/LazyAI-atfvfwhwnqrbdffhrueahmggzdak",
+	"scheme": "LazyAI",
+	"kind": "xcode"
+}
