@@ -69,7 +69,7 @@ class TestFullProcess(TestCase):
         self.test_task = "I want to write a book about Python."
         
         # Initialize team
-        self.team = Team(self.test_agents, self.test_task)
+        self.team = Team(self.test_agents, self.test_task, user_id=1)
 
     def test_full_process(self):
         # 1. Verify initialization results
