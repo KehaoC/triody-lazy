@@ -1,22 +1,12 @@
 import SwiftUI
 
 struct DesktopView: View {
-    @StateObject private var taskViewModel = TaskViewModel()
-    @State private var newTaskDescription = ""
+    @ObservedObject var taskViewModel: TaskViewModel
 
     var body: some View {
         VStack {
             List(taskViewModel.tasks) { task in
                 TaskCard(task: task)
-            }
-
-            HStack {
-                TextField("New Task", text: $newTaskDescription)
-                Button("Create") {
-                    guard !newTaskDescription.isEmpty else { return }
-                    taskViewModel.createTask(description: newTaskDescription)
-                    newTaskDescription = ""  // 清空输入框
-                }
             }
         }
     }
@@ -60,8 +50,4 @@ struct StatusLabel: View {
             .foregroundColor(isFinished ? .green : .red)
             .cornerRadius(8)
     }
-}
-
-#Preview {
-    DesktopView()
 }

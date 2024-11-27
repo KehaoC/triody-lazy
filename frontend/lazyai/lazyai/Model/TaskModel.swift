@@ -3,7 +3,7 @@ import Foundation
 // CodingKeys 用于指定 JSON 中的键名, 处理前后端命名不一致的问题
 
 struct TaskModel: Codable, Identifiable {
-    let id: Int
+    let id: Int?  // 创建的时候可以不管
     let userId: Int
     let title: String
     let description: String
@@ -21,6 +21,18 @@ struct TaskModel: Codable, Identifiable {
         self.isFinished = isFinished
         self.allSubtasksLazied = allSubtasksLazied
         self.subtasks = subtasks
+    }
+
+    // init for create
+    init(id: Int?, userId: Int, title: String) {
+        self.id = id
+        self.userId = userId
+        self.title = title
+        self.description = ""
+        self.summary = ""
+        self.isFinished = false
+        self.allSubtasksLazied = false
+        self.subtasks = []
     }
     
     enum CodingKeys: String, CodingKey {

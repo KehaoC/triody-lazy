@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct NewCardView: View {
+    @ObservedObject var taskViewModel: TaskViewModel
     @State private var inputText = ""
     @State private var isEditing = false
     @State private var showToast = false
@@ -52,6 +53,8 @@ struct NewCardView: View {
                         // 2. 显示 Toast 提示
                         toastInfo = "Sent to Lazy, You just have to have a rest now."
                         showToast = true
+                        print("create task: \(inputText)")
+                        taskViewModel.createTask(title: inputText)
 
                         // 3. 重置卡片状态并归位
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -70,6 +73,7 @@ struct NewCardView: View {
                             }
                         }
 
+                        // 5. 1.5 秒后隐藏 Toast
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                             showToast = false
                         }
@@ -112,5 +116,5 @@ struct NewCardView: View {
 }
 
 #Preview {
-    NewCardView()
+    NewCardView(taskViewModel: TaskViewModel())
 }

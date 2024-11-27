@@ -8,15 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var taskViewModel = TaskViewModel()
+
     var body: some View {
         NavigationView {
             TabView {
-                DesktopView()
+                DesktopView(taskViewModel: taskViewModel)
                     .tabItem {
                         Label("Desktop", systemImage: "desktopcomputer")
                         Text("Desktop")
                     }
-                NewCardView()
+                NewCardView(taskViewModel: taskViewModel)
                     .tabItem {
                         Label("New", systemImage: "plus")
                         Text("New")
