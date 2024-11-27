@@ -3,3 +3,8 @@
 
 # 忽略 Xcode 用户数据
 *.xcuserstate
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class

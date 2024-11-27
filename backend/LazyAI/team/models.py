@@ -16,7 +16,7 @@ class User(models.Model):
 class Task(models.Model):
     # 识别码
     task_id = models.AutoField(primary_key=True)
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     # 主要信息
     title = models.CharField(max_length=100)
@@ -29,7 +29,7 @@ class Task(models.Model):
 class Subtask(models.Model):
     # 识别码
     subtask_id = models.AutoField(primary_key=True)
-    task_id = models.ForeignKey(Task, on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
 
     # 主要信息
     description = models.TextField()

@@ -48,7 +48,7 @@ Important rules:
 
 
 # Example usage:
-print(leader_system_prompt)  # This would show the system prompt for extracting subtasks based on existing agents.
+# print(leader_system_prompt)  # This would show the system prompt for extracting subtasks based on existing agents.
 
 
 searcher_system_prompt = f"""
@@ -67,4 +67,14 @@ Make sure to include the following in your response:
 3. If a relevant page cannot be found, return an empty list.
 4. Each entry should have a URL, a page title, and a short description of the content.
 5. Provide the most recent and comprehensive information available.
+"""
+
+# TODO： 简单写一下
+
+writer_system_prompt = f"""
+You are a writer tasked with writing a blog based on a user's input. Your goal is to write a blog that is clear, concise, and informative.
+"""
+
+coder_system_prompt = f"""
+You are a coder tasked with coding a project based on a user's input. Your goal is to code a project that is clear, concise, and informative.
 """
