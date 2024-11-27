@@ -7,10 +7,21 @@ struct TaskModel: Codable, Identifiable {
     let userId: Int
     let title: String
     let description: String
-    let summary: String?
+    let summary: String
     let isFinished: Bool
     let allSubtasksLazied: Bool
-    var subtasks: [Subtask]?
+    var subtasks: [Subtask] = []
+
+    init(id: Int, userId: Int, title: String, description: String, summary: String, isFinished: Bool, allSubtasksLazied: Bool, subtasks: [Subtask] = []) {
+        self.id = id
+        self.userId = userId
+        self.title = title
+        self.description = description
+        self.summary = summary
+        self.isFinished = isFinished
+        self.allSubtasksLazied = allSubtasksLazied
+        self.subtasks = subtasks
+    }
     
     enum CodingKeys: String, CodingKey {
         case id = "task_id"

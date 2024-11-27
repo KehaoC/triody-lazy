@@ -9,14 +9,26 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-            Text("This is a Triody LazyAI")
+        NavigationView {
+            TabView {
+                DesktopView()
+                    .tabItem {
+                        Label("Desktop", systemImage: "desktopcomputer")
+                        Text("Desktop")
+                    }
+                NewCardView()
+                    .tabItem {
+                        Label("New", systemImage: "plus")
+                        Text("New")
+                    }
+                UserView()
+                    .tabItem {
+                        Label("User", systemImage: "person")
+                        Text("User")
+                    }
+            }
         }
-        .padding()
+        .navigationTitle("LazyAI")
     }
 }
 
