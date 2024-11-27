@@ -14,7 +14,12 @@ struct NewCardView: View {
             card
             toastCard(with: toastInfo)
         }
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 
     var card: some View {
         VStack {

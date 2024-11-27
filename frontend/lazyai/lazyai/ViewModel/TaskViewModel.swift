@@ -9,7 +9,6 @@ class TaskViewModel: ObservableObject {
 
     // View 中调用的时候不需要传入 id, 只需要传入 title 和 userId
     func createTask(userId: Int = 1, title: String) {
-        // TODO: 创建任务
         let newTask = TaskModel(
             id: tasks.count + 1,
             userId: userId,

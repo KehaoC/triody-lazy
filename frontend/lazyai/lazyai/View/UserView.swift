@@ -7,7 +7,11 @@ struct UserView: View {
     @State private var password: String = ""
     
     var body: some View {
+
         VStack {
+            Text("Lazy")
+                .font(.custom("Zapfino", size: 36))
+                .padding(.horizontal)
             if isLogin {
                 // 已登录状态
                 LoggedView
@@ -17,7 +21,12 @@ struct UserView: View {
             }
         }
         .padding()
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 
     var LoggedView: some View {
         VStack() {
@@ -44,10 +53,10 @@ struct UserView: View {
 
     var LoginView: some View {
         VStack(spacing: 20) {
-            Image(systemName: "person.circle")
-                .resizable()
-                .frame(width: 100, height: 100)
-                .foregroundColor(.gray)
+            // Image(systemName: "person.circle")
+            //     .resizable()
+            //     .frame(width: 100, height: 100)
+            //     .foregroundColor(.gray)
             
             TextField("Username", text: $username)
                 .textFieldStyle(RoundedBorderTextFieldStyle())

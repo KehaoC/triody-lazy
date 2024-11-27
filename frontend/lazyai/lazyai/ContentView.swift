@@ -31,7 +31,12 @@ struct ContentView: View {
             }
         }
         .navigationTitle("LazyAI")
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 }
 
 #Preview {
