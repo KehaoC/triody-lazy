@@ -7,6 +7,9 @@ from utils import beautyprint
 from prompts import leader_system_prompt,searcher_system_prompt
 import openai
 from openai import OpenAI
+from models import Task, Subtask
+from django.db import transaction  # For atomic operations
+
 def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> str:
     if client == "zhipuai":
         client = ZhipuAI(api_key="f3eb4e2ea260b190cfd33927d7034c34.rnN6WjfO2w5peFja")
@@ -90,7 +93,7 @@ class Agent:
         return self.chat_function(self.system_prompt, user_prompt)
 
 class Team:
-    def __init__(self, excutors, task):
+    def __init__(self, excutors, task_description):
         # Leader和Distributer是Team的固定Agent
         self.leader = Agent("Leader", leader_system_prompt)  
         # leader 了解系统能力的边界，知道什么能做好，什么做不了
@@ -101,15 +104,22 @@ class Team:
         # 可变Agent
         self.excutors = {excutor.name: excutor for excutor in excutors}
 
+        # Create a Task instance in the database
+        self.task = Task.objects.create(
+            title="New Task",  # Default title, modify as needed
+            description=self.task_description
+        )
+        self.task_id = self.task.task_id  # Save the generated task_id for reference
+        
         # 任务
-        self.task = task
+        self.task_description = task_description
         self.subtasks = []
     
     def decompose_task(self):
         # 将任务分解为多个子任务
         # TODO 修改prompt, 输出为[(subtask_description, agent_name), ...] agent 为空则为无法处理
         
-        leader_response = self.leader.chat(self.task)
+        leader_response = self.leader.chat(self.task_description)
         print(leader_response)
 
         subtask_dict = json.loads(leader_response) # 将json字符串转换为dict
@@ -120,9 +130,27 @@ class Team:
                 "excutor_name": subtask_content['agent_name'],
                 "excute_result": ""
             })
+            
+        #TODO :这里有必要先存储一遍吗
+        # # Save results back to the database
+        # with transaction.atomic():
+        #     for subtask in self.subtasks:
+        #         # Update or create the Subtask in the database
+        #         db_subtask, created = Subtask.objects.get_or_create(
+        #             task_id=self.task,
+        #             description=subtask['subtask_content'],
+        #             agent_name=subtask['excutor_name']
+        #         )
+        #         db_subtask.isLazied = True
+        #         db_subtask.result = subtask['excute_result']
+        #         db_subtask.save()
         
     
     def run(self):
+        if not self.task_id:
+            print("Task ID is required to save results to the database.")
+            return
+        
         # 执行任务, 根据 subtasks 和 excutors 执行任务
         #TODO: 遍历subtasks，对于每一个subtask，根据excutor_name找到对应的excutor，执行相应的chat函数，并将结果存入subtask的excute_result字段
         for subtask in self.subtasks:
@@ -134,12 +162,36 @@ class Team:
                 subtask['excute_result'] = "Sorry, I don't know how to do this."
         print(self.subtasks)
         
+        # 更新result字段，并更新task的isFinished字段
+        with transaction.atomic():
+            for subtask in self.subtasks:
+                # Update or create the Subtask in the database
+                db_subtask, created = Subtask.objects.get_or_create(
+                    task_id=self.task,
+                    description=subtask['subtask_content'],
+                    agent_name=subtask['excutor_name']
+                )
+                excutor = self.excutors.get(subtask['excutor_name'], None)
+                if excutor:
+                    db_subtask.isLazied = True
+                    db_subtask.result = subtask['excute_result']
+                    db_subtask.save()
+
+            # Update the main task as finished
+            self.task.isFinished = True
+            self.task.save()
     
     def print_result(self):
         beautyprint(self.subtasks)
     
 def main():
-    team = Team([Agent("Writer", "How can I write a book?"), Agent("Searcher", searcher_system_prompt),Agent("Coder", "生成代码")], "I want to write a blog about Python.")
+    team = Team(
+        [Agent("Writer", "How can I write a book?"), 
+         Agent("Searcher", searcher_system_prompt),
+         Agent("Coder", "生成代码")
+        ], 
+        "I want to write a blog about Python."
+    )
     team.decompose_task()
     team.run()
     
