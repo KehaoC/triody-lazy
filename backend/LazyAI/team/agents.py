@@ -8,6 +8,8 @@ from django.db import transaction  # For atomic operations
 import json
 from openai import OpenAI
 import openai
+import requests
+
 
 def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> str:
     if client == "zhipuai":
@@ -34,7 +36,7 @@ def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> 
         )
         return response.choices[0].message.content
 
-    elif client == "openai":  # 新增 GPT-4 的处理逻辑
+    elif client == "openai":  # New GPT-4 logic
         openai.api_key = "your-openai-api-key"
         model = "gpt-4"
         response = openai.ChatCompletion.create(
@@ -44,14 +46,15 @@ def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> 
                 {"role": "user", "content": user_prompt}
             ]
         )
-        return response['choices'][0]['message']['content']
+        return response.choices[0].message.content
+    
     elif client == "kimi":
         client = OpenAI(
             api_key = "sk-5kjr7mUBqHKhLpq1Ap7WZn9E4H3TfOx8kBBIoDOz2uWAmW75",
             base_url = "https://api.moonshot.cn/v1",
         )
         completion = client.chat.completions.create(
-        model = "moonshot-v1-8k",
+            model = "moonshot-v1-8k",
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -59,8 +62,25 @@ def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> 
             temperature = 0.3,
         )
         return completion.choices[0].message.content
+    
+    elif client == "Coder-32B-Instruct":
+        url = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-32B-Instruct"
+        headers = {"Authorization": "Bearer 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"}
+        payload = {
+            "inputs": f"System: {system_prompt}\nUser: {user_prompt}",
+            "parameters": {"max_length": 1000, "temperature": 0.7, "top_p": 0.9}
+        }
+        
+        response = requests.post(url, headers=headers, json=payload)
+        response_json = response.json()
+        return response_json[0]["generated_text"].strip()
+
     else:
         raise ValueError(f"Unsupported client type: {client}")
+
+
+
+
 
 # 定义不同 Agent 的特定功能
 def writer_chat(system_prompt, user_prompt):
@@ -69,11 +89,12 @@ def writer_chat(system_prompt, user_prompt):
 def searcher_chat(system_prompt, user_prompt):
     return get_response(system_prompt, user_prompt, client="zhipuai")
 
-def leader_chat(system_prompt,user_prompt):
+def leader_chat(system_prompt, user_prompt):
     return get_response(system_prompt, user_prompt, client="zhipuai")
 
-def coder_chat(system_prompt,user_prompt):
-    return "Something3"
+def coder_chat(system_prompt, user_prompt):
+    return get_response(system_prompt, user_prompt, client="Coder-32B-Instruct")
+
 # 函数映射字典
 functions = {
     "Leader": leader_chat,
@@ -81,8 +102,6 @@ functions = {
     "Searcher": searcher_chat,
     "Coder": coder_chat,
 }
-
-
 
 class Agent:
     def __init__(self, name, system_prompt):
@@ -96,8 +115,10 @@ class Agent:
 default_excutors = [
     Agent("Writer", writer_system_prompt),
     Agent("Searcher", searcher_system_prompt),
+    Agent("Searcher-Bio", searcher_system_prompt),
     Agent("Coder", coder_system_prompt),
 ]
+
 
 class Team:
     def __init__(self, excutors, task_description, user_id):

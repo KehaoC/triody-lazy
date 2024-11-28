@@ -1,3 +1,4 @@
+# 修改 prompts 信息
 agent_1_info = "Searcher: search information from the internet"
 agent_2_info = "Writer: write something"
 agent_3_info = "Coder: code something"
@@ -8,6 +9,7 @@ agents_info = f"""
 {agent_3_info}
 """
 
+
 leader_system_prompt = f"""
 You are the leader of a team of agents. 
 Your task is to extract the existing subtasks that can be best solved by the available agents. Each output should be a detailed and clear subtask description paired with the name of an agent, ensuring that each subtask explicitly reflects the context and requirements of the original task, clearly instructing the assigned agent on what to do.
@@ -16,6 +18,7 @@ Agents information:
 {{
     {agents_info}
 }}
+
 
 Output format:
 1. Each subtask should be represented as a tuple (subtask_description, agent_name).
