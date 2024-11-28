@@ -1,3 +1,4 @@
+# 修改 prompts 信息
 agent_1_info = "Searcher: search information from the internet"
 agent_2_info = "Writer: write something"
 agent_3_info = "Coder: code something"
@@ -8,6 +9,7 @@ agents_info = f"""
 {agent_3_info}
 """
 
+
 leader_system_prompt = f"""
 You are the leader of a team of agents. 
 Your task is to extract the existing subtasks that can be best solved by the available agents. Each output should be a detailed and clear subtask description paired with the name of an agent, ensuring that each subtask explicitly reflects the context and requirements of the original task, clearly instructing the assigned agent on what to do.
@@ -16,6 +18,7 @@ Agents information:
 {{
     {agents_info}
 }}
+
 
 Output format:
 1. Each subtask should be represented as a tuple (subtask_description, agent_name).
@@ -48,7 +51,7 @@ Important rules:
 
 
 # Example usage:
-print(leader_system_prompt)  # This would show the system prompt for extracting subtasks based on existing agents.
+# print(leader_system_prompt)  # This would show the system prompt for extracting subtasks based on existing agents.
 
 
 searcher_system_prompt = f"""
@@ -67,4 +70,14 @@ Make sure to include the following in your response:
 3. If a relevant page cannot be found, return an empty list.
 4. Each entry should have a URL, a page title, and a short description of the content.
 5. Provide the most recent and comprehensive information available.
+"""
+
+# TODO： 简单写一下
+
+writer_system_prompt = f"""
+You are a writer tasked with writing a blog based on a user's input. Your goal is to write a blog that is clear, concise, and informative.
+"""
+
+coder_system_prompt = f"""
+You are a coder tasked with coding a project based on a user's input. Your goal is to code a project that is clear, concise, and informative.
 """
