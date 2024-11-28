@@ -7,7 +7,11 @@ from team.database import Database
 class TestFullProcess(TestCase):
     def setUp(self):
         # Create mock users
-        self.mock_user1 = Database.insert("user", name="testuser1", email="test1@example.com", password="testpass123")
+        self.mock_user1 = User.objects.create(
+            name='testuser1',
+            email='test1@example.com',
+            password='testpass123'
+        )
         
         self.mock_user2 = User.objects.create(
             name='testuser2',
@@ -61,11 +65,16 @@ class TestFullProcess(TestCase):
             Agent("Searcher", searcher_system_prompt),
             Agent("Coder", "Generate code")
         ]
-
-        self.test_task = "I want to know how to download vscode to calculate 2 plus 8 through Python."
+        
+        # Create a Task instance in the database
+        self.test_task = Task.objects.create(
+            title = "New Task",  # Default title, modify as needed
+            description =  "I want to know how to download vscode to calculate 2 plus 8 through Python.",
+            user_id = 1,
+        )
         
         # Initialize team
-        self.team = Team(self.test_agents, self.test_task, user_id=1)
+        self.team = Team(self.test_agents, self.test_task)
 
     def test_full_process(self):
         # 1. Verify initialization results
