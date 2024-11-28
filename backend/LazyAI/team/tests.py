@@ -2,16 +2,12 @@ from django.test import TestCase
 from team.models import Task, Subtask, User
 from team.agents import Agent, Team
 from team.prompts import searcher_system_prompt
-
+from team.database import Database
 
 class TestFullProcess(TestCase):
     def setUp(self):
         # Create mock users
-        self.mock_user1 = User.objects.create(
-            name='testuser1',
-            email='test1@example.com',
-            password='testpass123'
-        )
+        self.mock_user1 = Database.insert("user", name="testuser1", email="test1@example.com", password="testpass123")
         
         self.mock_user2 = User.objects.create(
             name='testuser2',
@@ -24,14 +20,14 @@ class TestFullProcess(TestCase):
             title="Mock Task 1",
             description="This is a mock task 1",
             user=self.mock_user1,
-            isFinished=True
+            is_finished=True
         )
         
         self.mock_task2 = Task.objects.create(
             title="Mock Task 2", 
             description="This is a mock task 2",
             user=self.mock_user2,
-            isFinished=False
+            is_finished=False
         )
 
         # Create some mock subtasks
@@ -40,7 +36,7 @@ class TestFullProcess(TestCase):
             description="Mock subtask 1",
             agent_name="Writer",
             result="Mock result 1",
-            isLazied=True
+            is_lazied=True
         )
 
         Subtask.objects.create(
@@ -48,7 +44,7 @@ class TestFullProcess(TestCase):
             description="Mock subtask 2", 
             agent_name="Searcher",
             result="Mock result 2",
-            isLazied=True
+            is_lazied=True
         )
 
         Subtask.objects.create(
@@ -56,7 +52,7 @@ class TestFullProcess(TestCase):
             description="Mock subtask 3",
             agent_name="Coder", 
             result="Mock result 3",
-            isLazied=False
+            is_lazied=False
         )
 
         # Initialize test agents

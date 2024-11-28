@@ -9,7 +9,7 @@ import json
 from openai import OpenAI
 import openai
 import requests
-
+from team.database import Database
 
 def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> str:
     if client == "zhipuai":
@@ -90,7 +90,7 @@ def searcher_chat(system_prompt, user_prompt):
     return get_response(system_prompt, user_prompt, client="zhipuai")
 
 def leader_chat(system_prompt, user_prompt):
-    return get_response(system_prompt, user_prompt, client="zhipuai")
+    return get_response(system_prompt, user_prompt, client="kimi")
 
 def coder_chat(system_prompt, user_prompt):
     return get_response(system_prompt, user_prompt, client="Coder-32B-Instruct")
@@ -171,11 +171,78 @@ class Team:
         #             description=subtask['subtask_content'],
         #             agent_name=subtask['excutor_name']
         #         )
-        #         db_subtask.isLazied = True
+        #         db_subtask.is_lazied = True
         #         db_subtask.result = subtask['excute_result']
         #         db_subtask.save()
         
+    def run(self):
+    if not self.task_id:
+        print("Task ID is required to save results to the database.")
+        return
     
+    # Execute tasks and store results
+    for subtask in self.subtasks:
+        executor = self.executors.get(subtask['executor_name'], None)
+        if executor:
+            subtask['execute_result'] = executor.chat(subtask['subtask_content'])
+            print(subtask['execute_result'])
+        else:
+            subtask['execute_result'] = "Sorry, I don't know how to do this."
+    print(self.subtasks)
+
+    # Update database with results
+    with transaction.atomic():
+        for subtask in self.subtasks:
+            # Check if the subtask already exists
+            existing_subtasks = Database.select(
+                "Subtask",
+                task_id=self.task.task_id,
+                description=subtask['subtask_content'],
+                agent_name=subtask['executor_name']
+            )
+            
+            if existing_subtasks.exists():
+                # If the subtask exists, update its fields
+                Database.update(
+                    "Subtask",
+                    filters={
+                        "task_id": self.task.task_id,
+                        "description": subtask['subtask_content'],
+                        "agent_name": subtask['executor_name']
+                    },
+                    updates={
+                        "result": subtask['execute_result'],
+                        "is_lazied": True
+                    }
+                )
+            else:
+                # If the subtask doesn't exist, create it
+                Database.insert(
+                    "Subtask",
+                    task_id=self.task.task_id,
+                    description=subtask['subtask_content'],
+                    agent_name=subtask['executor_name'],
+                    result=subtask['execute_result'],
+                    is_lazied=True
+                )
+
+        # Check if all subtasks are marked as "lazied"
+        all_subtasks_lazied = all(
+            subtask['is_lazied'] for subtask in Database.select(
+                "Subtask",
+                task_id=self.task.task_id
+            ).values("is_lazied")
+        )
+
+        # Update the parent task's status
+        Database.update(
+            "Task",
+            filters={"task_id": self.task.task_id},
+            updates={
+                "is_finished": True,
+                "all_subtasks_lazied": all_subtasks_lazied
+            }
+        )
     def run(self):
         if not self.task_id:
             print("Task ID is required to save results to the database.")
@@ -201,22 +268,22 @@ class Team:
                     agent_name=subtask['excutor_name'],
                     defaults={
                         'result': subtask['excute_result'],
-                        'isLazied': True
+                        'is_lazied': True
                     }
                 )
                 
                 # 如果本来就存在的话直接更新
                 if not created:
                     db_subtask.result = subtask['excute_result']
-                    db_subtask.isLazied = True
+                    db_subtask.is_lazied = True
                     db_subtask.save()
 
             # 确保都处理了，如果都处理了就更新状态
             all_subtasks_lazied = all(
-                Subtask.objects.filter(task_id=self.task.task_id).values_list('isLazied', flat=True)
+                Subtask.objects.filter(task_id=self.task.task_id).values_list('is_lazied', flat=True)
             )
             
-            self.task.isFinished = True
+            self.task.is_finished = True
             self.task.allSubtasksLazied = all_subtasks_lazied
             self.task.save()
     
