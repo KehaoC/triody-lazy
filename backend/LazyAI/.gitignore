@@ -1,0 +1,15 @@
+   # 忽略所有 .pyc 文件
+   *.pyc
+   
+   # 忽略特定目录
+   __pycache__/
+   venv/
+   
+   # 忽略特定文件
+   config.ini
+   
+   # 忽略目录下的所有文件
+   logs/*
+   
+   # 不忽略特定文件
+   !logs/.gitkeep
