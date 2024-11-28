@@ -23,8 +23,8 @@ class Task(models.Model):
     description = models.TextField()
     summary = models.TextField(blank=True, null=True)
 
-    isFinished = models.BooleanField(default=False)  # 仅仅展现任务的完成状态
-    allSubtasksLazied = models.BooleanField(default=False)  # 是否所有子任务 都经过LazyTeam的多 Agent 框架处理过
+    is_finished = models.BooleanField(default=False)  # 仅仅展现任务的完成状态
+    all_subtasks_lazied = models.BooleanField(default=False)  # 是否所有子任务 都经过LazyTeam的多 Agent 框架处理过
 
 class Subtask(models.Model):
     # 识别码
@@ -34,7 +34,7 @@ class Subtask(models.Model):
     # 主要信息
     description = models.TextField()
     agent_name = models.CharField(max_length=100)
-    isLazied = models.BooleanField(default=False)  # 是否经过LazyTeam的多 Agent 框架处理过
+    is_lazied = models.BooleanField(default=False)  # 是否经过LazyTeam的多 Agent 框架处理过
 
     # 执行结果
     result = models.TextField()
