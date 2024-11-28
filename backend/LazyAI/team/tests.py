@@ -61,12 +61,12 @@ class TestFullProcess(TestCase):
 
         # Initialize test agents
         self.test_agents = [
-            Agent("Writer", "How can I write a book?"), 
+            Agent("Writer", "nothing to do with"), 
             Agent("Searcher", searcher_system_prompt),
             Agent("Coder", "Generate code")
         ]
 
-        self.test_task = "I want to write a book about Python."
+        self.test_task = "I want to know how to download vscode to calculate 2 plus 8 through Python."
         
         # Initialize team
         self.team = Team(self.test_agents, self.test_task, user_id=1)
@@ -84,3 +84,5 @@ class TestFullProcess(TestCase):
         # 3. Verify task execution
         self.team.run()
         self.assertGreater(Subtask.objects.count(), 3)  # More than the initial mock subtasks
+
+
