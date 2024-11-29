@@ -9,7 +9,7 @@ import json
 from openai import OpenAI
 import openai
 import requests
-
+from team.database import Database
 
 def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> str:
     if client == "zhipuai":
@@ -79,9 +79,6 @@ def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> 
         raise ValueError(f"Unsupported client type: {client}")
 
 
-
-
-
 # 定义不同 Agent 的特定功能
 def writer_chat(system_prompt, user_prompt):
     return "Something2"
@@ -112,7 +109,7 @@ class Agent:
     def chat(self, user_prompt):
         return self.chat_function(self.system_prompt, user_prompt)
 
-default_excutors = [
+default_executors = [
     Agent("Writer", writer_system_prompt),
     Agent("Searcher", searcher_system_prompt),
     Agent("Searcher-Bio", searcher_system_prompt),
@@ -121,7 +118,7 @@ default_excutors = [
 
 
 class Team:
-    def __init__(self, excutors, task_description, user_id):
+    def __init__(self, executors, task):
         # Leader和Distributer是Team的固定Agent
         self.leader = Agent("Leader", leader_system_prompt)  
         # leader 了解系统能力的边界，知道什么能做好，什么做不了
@@ -130,19 +127,13 @@ class Team:
         # TODO： 如果Leader 可以清晰定义无法解决的任务的集合，则也可以展现给用户
 
         # 可变Agent
-        excutors = excutors if excutors else default_excutors  # 如果传入为空那就默认，避免在 view 中定义
-        self.excutors = {excutor.name: excutor for excutor in excutors}
-        self.task_description = task_description
+        executors = executors if executors else default_executors  # 如果传入为空那就默认，避免在 view 中定义
+        self.executors = {executor.name: executor for executor in executors}
+        self.task_description = task.description
         self.subtasks = []
-
-        # Create a Task instance in the database
-        self.task = Task.objects.create(
-            title = "New Task",  # Default title, modify as needed
-            description = task_description,
-            user_id = user_id,
-        )
-        
-        self.task_id = self.task.task_id  # Save the generated task_id for reference
+        self.task = task
+        self.task_id = task.task_id  # Save the generated task_id for reference
+        task.save()  # Save the task to the database
     
     def decompose_task(self):
         # TODO 修改prompt, 输出为[(subtask_description, agent_name), ...] agent 为空则为无法处理
@@ -152,30 +143,22 @@ class Team:
         print(leader_response)
 
         subtask_dict = json.loads(leader_response) # 将json字符串转换为dict
-
-        # 将subtask_dict 转换为subtasks，方便后续处理
-        for subtask_content in subtask_dict:
-            self.subtasks.append({
-                "subtask_content": subtask_content['subtask_description'],
-                "excutor_name": subtask_content['agent_name'],
-                "excute_result": ""
-            })
-            
-        #TODO :这里有必要先存储一遍吗 (应该不用，可以在执行结束后统一存储)
-        # # Save results back to the database
-        # with transaction.atomic():
-        #     for subtask in self.subtasks:
-        #         # Update or create the Subtask in the database
-        #         db_subtask, created = Subtask.objects.get_or_create(
-        #             task_id=self.task,
-        #             description=subtask['subtask_content'],
-        #             agent_name=subtask['excutor_name']
-        #         )
-        #         db_subtask.isLazied = True
-        #         db_subtask.result = subtask['excute_result']
-        #         db_subtask.save()
         
-    
+        with transaction.atomic():
+            for subtask_content in subtask_dict:
+                # 创建或获取 Subtask 模型实例
+                db_subtask, created = Subtask.objects.get_or_create(
+                    task_id=self.task.task_id,  # 将任务正确链接
+                    description=subtask_content['subtask_description'],
+                    agent_name=subtask_content['agent_name'],
+                    defaults={
+                        'result': "",  # 初始结果为空
+                        'is_lazied': False  # 标记为未处理
+                    }
+                )
+                # 添加到 subtasks 列表中
+                self.subtasks.append(db_subtask)
+        
     def run(self):
         if not self.task_id:
             print("Task ID is required to save results to the database.")
@@ -183,43 +166,50 @@ class Team:
         
         # Execute tasks and store results
         for subtask in self.subtasks:
-            excutor = self.excutors.get(subtask['excutor_name'], None)
-            if excutor:
-                subtask['excute_result'] = excutor.chat(subtask['subtask_content'])
-                print(subtask['excute_result'])
+            # Use the subtask instance fields directly
+            executor = self.executors.get(subtask.agent_name, None)
+            if executor:
+                subtask.result = executor.chat(subtask.description)
+                print(subtask.result)
             else:
-                subtask['excute_result'] = "Sorry, I don't know how to do this."
-        print(self.subtasks)
+                subtask.result = "Sorry, I don't know how to do this."
+            # Mark the subtask as lazied
+            subtask.is_lazied = True
+            
+        self.print_subtasks_as_json(self.subtasks)
         
         # Update database with results
         with transaction.atomic():
+            # 一定要有这个save()才会更新到远端数据库
             for subtask in self.subtasks:
-                # 创建子任务，直接存储到数据库中
-                db_subtask, created = Subtask.objects.get_or_create(
-                    task_id=self.task.task_id,  # Properly link to parent task
-                    description=subtask['subtask_content'],
-                    agent_name=subtask['excutor_name'],
-                    defaults={
-                        'result': subtask['excute_result'],
-                        'isLazied': True
-                    }
-                )
-                
-                # 如果本来就存在的话直接更新
-                if not created:
-                    db_subtask.result = subtask['excute_result']
-                    db_subtask.isLazied = True
-                    db_subtask.save()
+                subtask.save()
 
-            # 确保都处理了，如果都处理了就更新状态
-            all_subtasks_lazied = all(
-                Subtask.objects.filter(task_id=self.task.task_id).values_list('isLazied', flat=True)
-            )
-            
-            self.task.isFinished = True
-            self.task.allSubtasksLazied = all_subtasks_lazied
+            # Check if all subtasks are lazied
+            all_subtasks_lazied = all(subtask.is_lazied for subtask in self.subtasks)
+
+            # Update the parent task's status
+            self.task.is_finished = True
+            self.task.all_subtasks_lazied = all_subtasks_lazied
             self.task.save()
     
     def print_result(self):
         beautyprint(self.subtasks)
 
+    def print_subtasks_as_json(self,subtasks):
+        """
+        将子任务列表打印为 JSON 格式，仅包含 description, agent_name, result 字段。
+    
+        :param subtasks: 子任务实例列表
+        """
+        # Prepare JSON output
+        subtasks_json = [
+            {
+                "description": subtask.description,
+                "agent_name": subtask.agent_name,
+                "result": subtask.result
+            }
+            for subtask in subtasks
+        ]
+    
+        # Print JSON
+        print(json.dumps(subtasks_json, indent=4, ensure_ascii=False))
