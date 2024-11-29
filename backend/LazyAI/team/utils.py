@@ -84,3 +84,25 @@ def api_error_handler(view_func):
                 status_code=500
             )
     return wrapper
+
+def require_auth(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        token = request.headers.get("Authorization")
+        if token.startswith("Bearer "):
+            token = token.split(" ")[1]
+        else:
+            raise APIError("Invalid token format, Bearer token is required", status_code=401)
+        
+        if token != "mocktoken":
+            raise APIError("Invalid token", status_code=401)
+        else:
+            request.user_id = get_user_id_by_token(token)
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+def get_user_id_by_token(token: str) -> int:
+    # TODO: 验证逻辑
+    # 简化，直接写死
+    return 1

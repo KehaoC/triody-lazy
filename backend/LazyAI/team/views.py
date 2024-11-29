@@ -6,15 +6,15 @@ from django.views.decorators.http import require_http_methods
 from django.db import transaction  # For atomic operations
 from team.agents import Team
 from team.models import Task, Subtask ,User # 导入模型
-from team.utils import api_error_handler, APIError, api_response
+from team.utils import api_error_handler, APIError, api_response, require_auth
 # Create your views here.
 
 @csrf_exempt  # 禁用csrf保护
 @require_http_methods(["POST"])  # 明确只允许 POST 请求
 @api_error_handler
+@require_auth
 def create_task(request):
-    user_id = get_user_id_by_request(request)
-    
+    user_id = request.user_id
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
@@ -47,6 +47,7 @@ def create_task(request):
 @csrf_exempt
 @require_http_methods(["DELETE"])
 @api_error_handler
+@require_auth
 def delete_task(request):
     try:
         data = json.loads(request.body)
@@ -54,7 +55,6 @@ def delete_task(request):
         raise APIError("Invalid JSON format", status_code=400)
         
     task_id = data.get("task_id")
-    user_id = get_user_id_by_request(request)
 
     if not task_id:
         raise APIError("Task ID is required")
@@ -77,8 +77,9 @@ def delete_task(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 @api_error_handler
+@require_auth
 def get_tasks(request):
-    user_id = get_user_id_by_request(request)
+    user_id = request.user_id
     tasks = Task.objects.filter(user_id=user_id)
 
     if not tasks.exists():
@@ -101,6 +102,7 @@ def get_tasks(request):
 @csrf_exempt
 @require_http_methods(["PUT"])
 @api_error_handler
+@require_auth
 def modify_task_status(request):
     try:
         data = json.loads(request.body)
@@ -109,7 +111,7 @@ def modify_task_status(request):
         
     task_id = data.get("task_id")
     is_finished = data.get("is_finished")
-    user_id = get_user_id_by_request(request)
+    user_id = request.user_id
 
     if task_id is None:
         raise APIError("Task ID is required")
@@ -142,6 +144,7 @@ def modify_task_status(request):
 @csrf_exempt
 @require_http_methods(["GET"])
 @api_error_handler
+@require_auth
 def get_subtasks(request):
     try:
         data = json.loads(request.body)
@@ -149,7 +152,7 @@ def get_subtasks(request):
         raise APIError("Invalid JSON format", status_code=400)
         
     task_id = data.get("task_id")
-    user_id = get_user_id_by_request(request)
+    user_id = request.user_id
 
     if task_id is None:
         raise APIError("Task ID is required")
@@ -185,19 +188,3 @@ def get_subtasks(request):
         data={"subtasks": subtasks_data},
         message="Subtasks fetched successfully"
     )
-
-def get_user_id_by_request(request):
-    """验证用户的token并且转换为user_id"""
-    token = request.headers.get("Authorization")
-    if not token:
-        raise APIError("Authorization header is required", status_code=401)
-    
-    if token.startswith("Bearer "):
-        token = token.split(" ")[1]
-    else:
-        raise APIError("Invalid token format", status_code=401)
-
-    if token == "mocktoken":
-        return 1
-    else:
-        raise APIError("Invalid token", status_code=401)
