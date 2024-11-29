@@ -6,310 +6,198 @@ from django.views.decorators.http import require_http_methods
 from django.db import transaction  # For atomic operations
 from team.agents import Team
 from team.models import Task, Subtask ,User # 导入模型
+from team.utils import api_error_handler, APIError, api_response
 # Create your views here.
 
 @csrf_exempt  # 禁用csrf保护
 @require_http_methods(["POST"])  # 明确只允许 POST 请求
+@api_error_handler
 def create_task(request):
-    try:
-        user_id = get_user_id_by_request(request)
-
-        data = json.loads(request.body)
-        task_description = data.get("description")
-        task_title = data.get("title")
-        
-        if not task_description:
-            return JsonResponse({"error": "Task description is required"}, status=400)
-
-        # Create a Task instance in the database
-        task = Task.objects.create(
-            title = task_title,  # Default title, modify as needed
-            description =  task_description,
-            user_id = user_id,
-        )
-        
-        team = Team([], task)     
-        # 构造响应数据
-        response_data = {
-            "status": "success",
-            "message": "Task created successfully",
-            "data": {
-                "task_id": team.task_id,  # 假设 Team 对象的 task_id 属性是必需的
-                "title": task.title,
-                "description": task.description,
-                "summary": None,  # 初始为空，假设未来会添加
-                "is_finished": False,  # 新任务默认未完成
-                "all_subtasks_lazied": False,  # 默认所有子任务未加载
-            }
-        }
-        
-        return JsonResponse(response_data, status=200)
+    user_id = get_user_id_by_request(request)
     
-    except Exception as e:
-        # 捕获异常并返回错误响应
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        raise APIError("Invalid JSON format", status_code=400)
+        
+    task_description = data.get("description")
+    task_title = data.get("title")
+    
+    if not task_description:
+        raise APIError("Task description is required")
 
+    task = Task.objects.create(
+        title=task_title,
+        description=task_description,
+        user_id=user_id,
+    )
+    
+    team = Team([], task)     
+    response_data = {
+        "task_id": team.task_id,
+        "title": task.title,
+        "description": task.description,
+        "summary": None,
+        "is_finished": False,
+        "all_subtasks_lazied": False,
+    }
+    
+    return api_response(response_data, "Task created successfully")
 
-@csrf_exempt  # 禁用 CSRF 保护
-@require_http_methods(["DELETE"])  # 明确只允许 DELETE 请求
+@csrf_exempt
+@require_http_methods(["DELETE"])
+@api_error_handler
 def delete_task(request):
     try:
-        # 解析请求体中的 JSON 数据
         data = json.loads(request.body)
-        task_id = data.get("task_id")
+    except json.JSONDecodeError:
+        raise APIError("Invalid JSON format", status_code=400)
         
-        user_id = get_user_id_by_request(request)
+    task_id = data.get("task_id")
+    user_id = get_user_id_by_request(request)
 
-        if not task_id:
-            return JsonResponse({
-                "status": "error",
-                "message": "Task ID is required",
-                "data": None
-            }, status=400)
-        
-        # 转换 task_id 为整数类型
-        try:
-            task_id = int(task_id)
-        except ValueError:
-            return JsonResponse({
-                "status": "error",
-                "message": "Task ID must be an integer",
-                "data": None
-            }, status=400)
-        
-        # 使用事务确保任务和子任务同时删除
-        with transaction.atomic():
-            # 确保任务存在
-            task = Task.objects.filter(task_id=task_id, user_id=user_id).first()
-            if not task:
-                return JsonResponse({
-                    "status": "error",
-                    "message": "Task not found",
-                    "data": None
-                }, status=404)
-
-            # 删除相关子任务
-            Subtask.objects.filter(task_id=task_id).delete()
-
-            # 删除任务
-            task.delete()
-
-        # 返回成功响应
-        return JsonResponse({
-            "status": "success",
-            "message": "Task deleted successfully",
-            "data": None
-        }, status=200)
+    if not task_id:
+        raise APIError("Task ID is required")
     
-    except Exception as e:
-        # 捕获异常并返回错误信息
-        return JsonResponse({
-            "status": "error",
-            "message": str(e),
-            "data": None
-        }, status=500)
-
-@csrf_exempt  # 禁用csrf保护
-@require_http_methods(["POST"])  # 明确只允许 POST 请求
-def modify_task_status(request):
     try:
-        # 解析请求体 JSON 数据
-        data = json.loads(request.body)
-        task_id = data.get("task_id")
-        is_finished = data.get("is_finished")
-
-        user_id = get_user_id_by_request(request)
-        
-        # 参数校验
-        if not task_id:
-            return JsonResponse({
-                "status": "error",
-                "message": "Task ID is required",
-                "data": None
-            }, status=400)
-            
-        if is_finished is None:
-            return JsonResponse({
-                "status": "error",
-                "message": "is_finished is required",
-                "data": None
-            }, status=400)
-
-        # 转换 task_id
-        try:
-            task_id = int(task_id)  # 转换为整数
-        except ValueError:
-            return JsonResponse({
-                "status": "error",
-                "message": "Task ID must be an integer",
-                "data": None
-            }, status=400)
-        
-        # 验证 is_finished 是布尔值
-        if not isinstance(is_finished, bool):
-            return JsonResponse({
-                "status": "error",
-                "message": "is_finished must be a boolean value",
-                "data": None
-            }, status=400)
-
+        task_id = int(task_id)
+    except ValueError:
+        raise APIError("Task ID must be an integer")
+    
+    with transaction.atomic():
         task = Task.objects.filter(task_id=task_id, user_id=user_id).first()
         if not task:
-            return JsonResponse({
-                "status": "error",
-                "message": "Task not found",
-                "data": {
-                    "details": "Task ID not found"
-                }
-            }, status=404)
+            raise APIError("Task not found", status_code=404)
 
-        # 更新任务状态
-        task.is_finished = is_finished
-        task.save()
+        Subtask.objects.filter(task_id=task_id).delete()
+        task.delete()
 
-        # 返回成功响应
-        return JsonResponse({
-            "status": "success",
-            "message": f"Task {task_id} status updated to {is_finished}",
-            "data": None
-        }, status=200)
+    return api_response(message="Task deleted successfully")
 
-    except Exception as e:
-        return JsonResponse({
-            "status": "error",
-            "message": "Task status update failed",
-            "data": {
-                "details": str(e)
-            }
-        }, status=500)
-
-
-
-
-@csrf_exempt  # 禁用 CSRF 保护
-@require_http_methods(["GET"])  # 明确只允许 GET 请求
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_error_handler
 def get_tasks(request):
-    try:
-        user_id = get_user_id_by_request(request)
+    user_id = get_user_id_by_request(request)
+    tasks = Task.objects.filter(user_id=user_id)
 
-        # 获取用户的所有任务
-        tasks = Task.objects.filter(user_id=user_id)
+    if not tasks.exists():
+        raise APIError("No tasks found for the given User ID", status_code=404)
 
-        if not tasks.exists():
-            return JsonResponse({
-                "status": "error", 
-                "message": "No tasks found for the given User ID",
-                "data": None
-            }, status=404)
-        # 格式化任务数据
-        tasks_data = [
-            {
-                "task_id": task.task_id,
-                "title": task.title,
-                "description": task.description,
-                "summary": task.summary,
-                "is_finished": task.is_finished,
-                "all_subtasks_lazied": task.all_subtasks_lazied
-            }
-            for task in tasks
-        ]
-
-        # 返回成功响应
-        response = {
-            "status": "success",
-            "message": "Tasks fetched successfully",
-            "data": {
-                "tasks": tasks_data
-            }
+    tasks_data = [
+        {
+            "task_id": task.task_id,
+            "title": task.title,
+            "description": task.description,
+            "summary": task.summary,
+            "is_finished": task.is_finished,
+            "all_subtasks_lazied": task.all_subtasks_lazied
         }
-        return JsonResponse(response, status=200, json_dumps_params={'ensure_ascii': False, 'indent': 4})
+        for task in tasks
+    ]
 
-    except Exception as e:
-        return JsonResponse({"status": "error", "message": str(e)}, status=500)
+    return api_response({"tasks": tasks_data}, "Tasks fetched successfully")
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+@api_error_handler
+def modify_task_status(request):
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        raise APIError("Invalid JSON format", status_code=400)
+        
+    task_id = data.get("task_id")
+    is_finished = data.get("is_finished")
+    user_id = get_user_id_by_request(request)
+
+    if task_id is None:
+        raise APIError("Task ID is required")
+        
+    if is_finished is None:
+        raise APIError("is_finished status is required")
+
+    try:
+        task_id = int(task_id)
+    except ValueError:
+        raise APIError("Task ID must be an integer")
+
+    # 验证任务是否属于当前用户并更新状态
+    task = Task.objects.filter(task_id=task_id, user_id=user_id).first()
+    if not task:
+        raise APIError("Task not found", status_code=404)
+
+    task.is_finished = is_finished
+    task.save()
+
+    return api_response(
+        data={
+            "task_id": task.task_id,
+            "is_finished": task.is_finished
+        },
+        message="Task status updated successfully"
+    )
 
 
-@csrf_exempt  # 禁用 CSRF 保护
-@require_http_methods(["GET"])  # 明确只允许 GET 请求
+@csrf_exempt
+@require_http_methods(["GET"])
+@api_error_handler
 def get_subtasks(request):
     try:
-        # 解析请求体 JSON 数据
         data = json.loads(request.body)
-        task_id = data.get("task_id")
+    except json.JSONDecodeError:
+        raise APIError("Invalid JSON format", status_code=400)
+        
+    task_id = data.get("task_id")
+    user_id = get_user_id_by_request(request)
 
-        user_id = get_user_id_by_request(request)
-    
-        # 参数校验
-        if task_id is None:
-            return JsonResponse({
-                "status": "error",
-                "message": "Task ID is required",
-                "data": None
-            }, status=400)
+    if task_id is None:
+        raise APIError("Task ID is required")
 
-        try:
-            task_id = int(task_id)  # 确保 task_id 是整数
-        except ValueError:
-            return JsonResponse({
-                "status": "error",
-                "message": "Task ID must be an integer",
-                "data": None
-            }, status=400)
+    try:
+        task_id = int(task_id)
+    except ValueError:
+        raise APIError("Task ID must be an integer")
 
-        # 获取任务的所有子任务
-        subtasks = Subtask.objects.filter(task_id=task_id)
+    # 验证任务是否属于当前用户
+    task = Task.objects.filter(task_id=task_id, user_id=user_id).first()
+    if not task:
+        raise APIError("Task not found", status_code=404)
 
-        if not subtasks.exists():
-            return JsonResponse({
-                "status": "error",
-                "message": "No subtasks found for the given Task ID",
-                "data": None
-            }, status=404)
+    # 获取任务的所有子任务
+    subtasks = Subtask.objects.filter(task_id=task_id)
+    if not subtasks.exists():
+        raise APIError("No subtasks found for the given Task ID", status_code=404)
 
-        # 格式化子任务数据
-        subtasks_data = [
-            {
-                "subtask_id": subtask.subtask_id,
-                "description": subtask.description,
-                "agent_name": subtask.agent_name,
-                "is_lazied": subtask.is_lazied,
-                "result": subtask.result,
-            }
-            for subtask in subtasks
-        ]
+    # 格式化子任务数据
+    subtasks_data = [
+        {
+            "subtask_id": subtask.subtask_id,
+            "description": subtask.description,
+            "agent_name": subtask.agent_name,
+            "is_lazied": subtask.is_lazied,
+            "result": subtask.result,
+        }
+        for subtask in subtasks
+    ]
 
-        # 返回成功响应
-        return JsonResponse({
-            "status": "success",
-            "message": "Subtasks fetched successfully",
-            "data": {
-                "subtasks": subtasks_data
-            }
-        }, status=200, json_dumps_params={'ensure_ascii': False, 'indent': 4})
-
-    except Exception as e:
-        return JsonResponse({
-            "status": "error",
-            "message": "Some error occur. Please try again.",
-            "data": None
-        }, status=500)
+    return api_response(
+        data={"subtasks": subtasks_data},
+        message="Subtasks fetched successfully"
+    )
 
 def get_user_id_by_request(request):
-    """
-    验证用户的token 并且转换为 user_id, 否则抛出相应异常
-    异常在调用函数中捕获
-    """
-
-    # mock data = "Bearer mocktoken"
+    """验证用户的token并且转换为user_id"""
     token = request.headers.get("Authorization")
     if not token:
-        raise Exception("Authorization header is required")
+        raise APIError("Authorization header is required", status_code=401)
     
     if token.startswith("Bearer "):
         token = token.split(" ")[1]
     else:
-        raise Exception("Invalid token format")
+        raise APIError("Invalid token format", status_code=401)
 
     if token == "mocktoken":
         return 1
     else:
-        raise Exception("Invalid token")
+        raise APIError("Invalid token", status_code=401)
