@@ -1,7 +1,7 @@
 from django.test import TestCase
 from team.models import Task, Subtask, User
 from team.agents import Agent, Team
-from team.prompts import searcher_system_prompt
+from team.prompts import seacher_and_textenhancer_system_prompt,coder_system_prompt
 from team.database import Database
 
 class TestFullProcess(TestCase):
@@ -62,14 +62,14 @@ class TestFullProcess(TestCase):
         # Initialize test agents
         self.test_agents = [
             Agent("Writer", "nothing to do with"), 
-            Agent("Searcher", searcher_system_prompt),
-            Agent("Coder", "Generate code")
+            Agent("Searcher", seacher_and_textenhancer_system_prompt),
+            Agent("Coder", coder_system_prompt)
         ]
         
         # Create a Task instance in the database
         self.test_task = Task.objects.create(
             title = "New Task",  # Default title, modify as needed
-            description =  "I want to know how to download vscode to calculate 2 plus 8 through Python.",
+            description =  "告诉我阿里巴巴2024年ESG报告的重点",
             user_id = 1,
         )
         
@@ -80,7 +80,7 @@ class TestFullProcess(TestCase):
         # 1. Verify initialization results
         self.assertEqual(Task.objects.count(), 3)  # 2 mock tasks + 1 new task
         created_task = Task.objects.last()  # Get the most recently created task
-        self.assertEqual(created_task.description, self.test_task)
+        self.assertEqual(created_task.description, self.test_task.description)
 
         # 2. Verify task decomposition
         self.team.decompose_task()
