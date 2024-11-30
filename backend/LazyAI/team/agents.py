@@ -68,26 +68,62 @@ def get_response(system_prompt: str, user_prompt: str, client: str = "groq") -> 
         headers = {"Authorization": "Bearer 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"}
         payload = {
             "inputs": f"System: {system_prompt}\nUser: {user_prompt}",
-            "parameters": {"max_length": 1000, "temperature": 0.7, "top_p": 0.9}
+            "parameters": {"max_length": 300, "temperature": 0.7, "top_p": 0.9}
         }
         
         response = requests.post(url, headers=headers, json=payload)
         response_json = response.json()
         return response_json[0]["generated_text"].strip()
+    
+    elif client == "bocha":
+        url = "https://api.bochaai.com/v1/web-search"  # 博查 AI 搜索 API
+        headers = {
+            "Authorization": f"Bearer sk-f7ffbecba7fb4ea187c6ed63903f9ed8",#apikey
+            "Content-Type": "application/json"
+        }
+        params = {
+            "query": user_prompt,
+            "count": 4 , # 获取前 4 个搜索结果
+            "summary": True # 返回摘要
+        }
+        response = requests.post(url, headers=headers, json=params)
+        return response.json()  # 返回 JSON 格式的搜索结果
+
 
     else:
         raise ValueError(f"Unsupported client type: {client}")
 
+def text_enhancer(search_ai_name: str, search_results, refine_ai_name: str,system_prompt):
+    if(search_ai_name == "bocha"):
+         # 获取 data -> webPage -> value 中的所有网页数据
+        web_page_values = search_results.get("data", {}).get("webPages", {}).get("value", [])
+        # 提取 name, url, snippet 信息
+        extracted_data = []
+        for page in web_page_values:
+            name = page.get("name", "")
+            url = page.get("url", "")
+            snippet = page.get("snippet", "")
+            summary = page.get("summary", "")
+            extracted_data.append(f"Name: {name}\nURL: {url}\nSnippet: {snippet}\nSummary:{summary}\n")
+    
+        # 将Jason提取并转化为文本
+        search_text = "\n".join(extracted_data)
+        return get_response(system_prompt,search_text,refine_ai_name)
+               
+    elif search_ai_name == "others":
+        pass
 
 # 定义不同 Agent 的特定功能
 def writer_chat(system_prompt, user_prompt):
     return "Something2"
 
 def searcher_chat(system_prompt, user_prompt):
-    return get_response(system_prompt, user_prompt, client="zhipuai")
+    #return get_response(system_prompt, user_prompt, client="zhipuai")
+    search_results = get_response(system_prompt, user_prompt, client="bocha")
+    return text_enhancer("bocha", search_results, "zhipuai",system_prompt)
 
 def leader_chat(system_prompt, user_prompt):
-    return get_response(system_prompt, user_prompt, client="zhipuai")
+    return get_response(system_prompt, user_prompt, client="kimi")
 
 def coder_chat(system_prompt, user_prompt):
     return get_response(system_prompt, user_prompt, client="Coder-32B-Instruct")
@@ -112,7 +148,6 @@ class Agent:
 default_executors = [
     Agent("Writer", writer_system_prompt),
     Agent("Searcher", searcher_system_prompt),
-    Agent("Searcher-Bio", searcher_system_prompt),
     Agent("Coder", coder_system_prompt),
 ]
 
