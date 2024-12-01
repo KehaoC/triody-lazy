@@ -63,7 +63,7 @@ def delete_task(request):
         task_id = int(task_id)
     except ValueError:
         raise APIError("Task ID must be an integer")
-    
+    user_id = request.user_id
     with transaction.atomic():
         task = Task.objects.filter(task_id=task_id, user_id=user_id).first()
         if not task:
