@@ -1,5 +1,11 @@
 import Foundation
 
+struct APIResponse<T: Codable>: Codable {
+    let status: String
+    let message: String
+    let data: T
+}
+
 class TaskService {
     let baseUrl = "http://127.0.0.1:8000/team/"
     let token: String = "Bearer mocktoken"
@@ -9,14 +15,24 @@ class TaskService {
         let description: String
     }
 
-    struct APIResponse<T: Codable>: Codable {
-        let status: String
-        let message: String
-        let data: T
+    struct SubtaskRequest: Codable {
+        let task_id: Int
     }
 
     struct TasksData: Codable {
         let tasks: [TaskModel]
+    }
+
+    struct SubtasksData: Codable {
+        let subtasks: [SubtaskResponse]
+    }
+
+    struct SubtaskResponse: Codable {
+        let subtask_id: Int
+        let description: String
+        let agent_name: String
+        let is_lazied: Bool
+        let result: String?
     }
 
     func createTask(title: String, description: String) async throws -> TaskModel {
@@ -117,12 +133,9 @@ class TaskService {
         request.setValue(token, forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        struct GetSubtasksRequest: Codable {
-            let task_id: Int
-        }
-        
-        let getRequest = GetSubtasksRequest(task_id: taskId)
-        request.httpBody = try JSONEncoder().encode(getRequest)
+
+        let subtaskRequest = SubtaskRequest(task_id: taskId)
+        request.httpBody = try JSONEncoder().encode(subtaskRequest)
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -131,17 +144,17 @@ class TaskService {
             throw NSError(domain: "TaskService", code: -1, userInfo: [NSLocalizedDescriptionKey: "HTTP request failed"])
         }
         
-        struct GetSubtasksResponse: Codable {
-            let status: String
-            let message: String
-            let data: SubtasksData
-            
-            struct SubtasksData: Codable {
-                let subtasks: [Subtask]
-            }
+        let apiResponse = try JSONDecoder().decode(APIResponse<SubtasksData>.self, from: data)
+        let subtasks: [Subtask] = apiResponse.data.subtasks.map {
+            Subtask(
+                id: $0.subtask_id,
+                taskId: taskId,
+                description: $0.description,
+                agentName: $0.agent_name,
+                isLazied: $0.is_lazied,
+                result: $0.result ?? ""
+            )
         }
-        
-        let subtasksResponse = try JSONDecoder().decode(GetSubtasksResponse.self, from: data)
-        return subtasksResponse.data.subtasks
+        return subtasks
     }
 }

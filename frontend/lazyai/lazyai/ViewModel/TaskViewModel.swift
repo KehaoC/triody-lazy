@@ -10,10 +10,21 @@ class TaskViewModel: ObservableObject {
         
         Task {
             do {
+                // 获取任务
                 print("Fetching tasks")
                 let fetchedTasks = try await taskService.getTasks()
                 await MainActor.run {
                     self.tasks = fetchedTasks
+                    // 获取子任务
+                    Task {
+                        for i in self.tasks.indices {
+                            if let subtasks = try? await taskService.getSubtasks(taskId: self.tasks[i].id!) {
+                                await MainActor.run {
+                                    self.tasks[i].subtasks = subtasks
+                                }
+                            }
+                        }
+                    }
                 }
             } catch {
                 print("Failed to fetch tasks: \(error)")

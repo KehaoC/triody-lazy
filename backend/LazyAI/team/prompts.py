@@ -54,7 +54,6 @@ Important rules:
 # Example usage:
 # print(leader_system_prompt)  # This would show the system prompt for extracting subtasks based on existing agents.
 
-'''
 searcher_system_prompt = f"""
 You are a powerful search engine tasked with collecting the most relevant and comprehensive information based on a user's input. Your goal is to gather the best sources that provide detailed, reliable, and up-to-date content on the given topic.
 
@@ -72,7 +71,6 @@ Make sure to include the following in your response:
 4. Each entry should have a URL, a page title, and a short description of the content.
 5. Provide the most recent and comprehensive information available.
 """
-'''
 # TODO： 简单写一下
 
 writer_system_prompt = f"""

@@ -28,7 +28,6 @@ struct TaskCard: View {
             .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-            .scaleEffect(isLongPressed ? 1.05 : 1.0)
             .animation(.easeInOut(duration: 0.2), value: isLongPressed)
             .gesture(
                 LongPressGesture(minimumDuration: 0.5)
@@ -47,14 +46,6 @@ struct TaskCard: View {
             }
             
             if showDetail {
-                // Color.black.opacity(0.3)
-                //     .ignoresSafeArea()
-                //     .onTapGesture {
-                //         withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                //             showDetail = false
-                //         }
-                //     }
-                
                 DetailCardView(task: task, taskViewModel: taskViewModel, isShowing: $showDetail)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.9).combined(with: .opacity),

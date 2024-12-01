@@ -147,7 +147,7 @@ def modify_task_status(request):
 
 
 @csrf_exempt
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 @api_error_handler
 @require_auth
 def get_subtasks(request):
@@ -188,6 +188,7 @@ def get_subtasks(request):
         }
         for subtask in subtasks
     ]
+    print(subtasks_data)
 
     return api_response(
         data={"subtasks": subtasks_data},
