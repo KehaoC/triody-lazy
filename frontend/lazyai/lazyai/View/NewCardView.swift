@@ -2,8 +2,10 @@ import SwiftUI
 
 struct NewCardView: View {
     @ObservedObject var taskViewModel: TaskViewModel
-    @State private var inputText = ""
-    @State private var isEditing = false
+    @State private var title: String = "Test title"
+    @State private var description: String = "Test description"
+    @State private var isEditingTitle = false
+    @State private var isEditingDescription = false
     @State private var showToast = false
     @State private var toastInfo: String = ""
     @State private var cardOpacity: Double = 1.0
@@ -22,15 +24,64 @@ struct NewCardView: View {
     #endif
 
     var card: some View {
-        VStack {
-            Spacer()
-            if isEditing {
-                TextEditor(text: $inputText)
-            } else {
-                Text(inputText.isEmpty ? "Got some problems today?" : inputText)
-                Text("Drag to the top to send to AI")
+        VStack(spacing: 20) {
+            Spacer().frame(height: 20)
+            
+            // Title Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Title")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal)
+                
+                if isEditingTitle {
+                    TextField("Enter title", text: $title)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                } else {
+                    Text(title.isEmpty ? "Got some problems today?" : title)
+                        .font(.headline)
+                        .padding(.horizontal)
+                        .onTapGesture {
+                            withAnimation {
+                                isEditingTitle = true
+                            }
+                        }
+                }
             }
+            
+            // Description Section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Description")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+                    .padding(.horizontal)
+                
+                if isEditingDescription {
+                    TextEditor(text: $description)
+                        .frame(height: 100)
+                        .padding(4)
+                        .background(RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.gray.opacity(0.2)))
+                        .padding(.horizontal)
+                } else {
+                    Text(description.isEmpty ? "Add some details..." : description)
+                        .font(.body)
+                        .padding(.horizontal)
+                        .onTapGesture {
+                            withAnimation {
+                                isEditingDescription = true
+                            }
+                        }
+                }
+            }
+            
             Spacer()
+            
+            Text("Drag to the top to send to AI")
+                .font(.caption)
+                .foregroundColor(.gray)
+            
             controlBar
         }
         .frame(width: 300, height: 400)
@@ -58,13 +109,17 @@ struct NewCardView: View {
                         // 2. 显示 Toast 提示
                         toastInfo = "Sent to Lazy, You just have to have a rest now."
                         showToast = true
-                        print("create task: \(inputText)")
-                        taskViewModel.createTask(title: inputText)
+                        print("create task: \(title)")
+                        Task {
+                            try await taskViewModel.createTask(title: title, description: description)
+                        }
 
                         // 3. 重置卡片状态并归位
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            inputText = ""
-                            isEditing = false
+                            title = ""
+                            description = ""
+                            isEditingTitle = false
+                            isEditingDescription = false
                             self.offset.height = 1000  // 先挪到下面去
 
                             // 4. 让卡片重新出现
@@ -89,9 +144,7 @@ struct NewCardView: View {
                 }
         )
         .onTapGesture {
-            withAnimation {
-                isEditing.toggle()
-            }
+            // Remove this since we now have separate tap gestures
         }
     }
 

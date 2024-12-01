@@ -3,6 +3,8 @@ struct TaskCard: View {
     let task: TaskModel
     @State private var isExpanded = true
     @ObservedObject var taskViewModel: TaskViewModel
+    @State private var showDeleteAlert = false
+    @State private var isLongPressed = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -14,15 +16,14 @@ struct TaskCard: View {
                 statusLabel(isFinished: task.isFinished)
             }
 
-            if let description = task.description, !description.isEmpty {
-                Text(description)
+            if !task.description.isEmpty {
+                Text(task.description)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
 
             if isExpanded {
-                Divider()
                 expendedSubtaskList(subtasks: task.subtasks ?? [])
             }
         }
@@ -31,8 +32,36 @@ struct TaskCard: View {
         .background(Color(.systemBackground))
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .scaleEffect(isLongPressed ? 1.05 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isLongPressed)
+        .gesture(
+            LongPressGesture(minimumDuration: 0.5)
+                .onChanged { _ in
+                    isLongPressed = true
+                }
+                .onEnded { _ in
+                    isLongPressed = false
+                    showDeleteAlert = true
+                }
+        )
         .onTapGesture {
-            isExpanded.toggle()
+            withAnimation {
+                isExpanded.toggle()
+            }
+        }
+        .alert("Delete Task", isPresented: $showDeleteAlert) {
+            Button("Delete", role: .destructive) {
+                Task {
+                    do {
+                        try await taskViewModel.deleteTask(taskId: task.id!)
+                    } catch {
+                        print("Error deleting task: \(error)")
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Are you sure you want to delete this task?")
         }
     }
 
@@ -50,7 +79,7 @@ struct TaskCard: View {
                     .foregroundStyle(.secondary)
             }
             // subtask list
-            if let subtasks = task.subtasks, subtasks.isEmpty {
+                if task.subtasks?.isEmpty ?? true {
                 Text("No subtasks detected")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -76,6 +105,15 @@ struct TaskCard: View {
                 RoundedRectangle(cornerRadius: 6)
                     .fill(isFinished ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
             )
+            .onTapGesture {
+                Task {
+                    do {
+                        try await taskViewModel.modifyTaskStatus(taskId: task.id!, isFinished: !task.isFinished)
+                    } catch {
+                        print("Error modifying task status: \(error)")
+                    }
+                }
+            }
     }
     #if DEBUG
     @ObserveInjection var forceRedraw

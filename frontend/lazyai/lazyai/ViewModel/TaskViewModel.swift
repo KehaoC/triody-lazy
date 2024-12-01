@@ -2,28 +2,70 @@ import SwiftUI
 
 class TaskViewModel: ObservableObject {
     @Published var tasks: [TaskModel] 
+    var taskService: TaskService
 
     init() {
-        self.tasks = mockTasks
+        self.taskService = TaskService()
+        self.tasks = []
+        
+        Task {
+            do {
+                print("Fetching tasks")
+                let fetchedTasks = try await taskService.getTasks()
+                await MainActor.run {
+                    self.tasks = fetchedTasks
+                }
+            } catch {
+                print("Failed to fetch tasks: \(error)")
+                await MainActor.run {
+                    self.tasks = mockTasks
+                }
+            }
+        }
     }
 
-    // View 中调用的时候不需要传入 id, 只需要传入 title 和 userId
-    func createTask(userId: Int = 1, title: String) {
-        let newTask = TaskModel(
-            id: tasks.count + 1,
-            userId: userId,
-            title: title
-        )
-        print("In TaskViewModel: \(newTask)")
-        tasks.append(newTask)
+    func createTask(title: String, description: String? = nil) async throws {
+        let newTask = try await taskService.createTask(title: title, description: description ?? "")
+        print("New task created: \(newTask)")
+        await MainActor.run {
+            tasks.append(newTask)
+        }
     }
 
+    func getTasks() async throws {
+        tasks = try await taskService.getTasks()
+    }
+
+    func modifyTaskStatus(taskId: Int, isFinished: Bool) async throws {
+        // 立即更新 UI
+        await MainActor.run {
+            if let index = tasks.firstIndex(where: { $0.id == taskId }) {
+                withAnimation {
+                    tasks[index].isFinished = isFinished
+                }
+            }
+        }
+        
+        // 后台进行 API 调用
+        try await taskService.modifyTaskStatus(taskId: taskId, isFinished: isFinished)
+    }
+
+    func deleteTask(taskId: Int) async throws {
+        // 立即更新 UI
+        await MainActor.run {
+            withAnimation {
+                tasks.removeAll(where: { $0.id == taskId })
+            }
+        }
+        
+        // 后台进行 API 调用
+        try await taskService.deleteTask(taskId: taskId)
+    }
 }
 
 var mockTasks: [TaskModel] = [
     TaskModel(
         id: 1,
-        userId: 1,
         title: "Write a blog post",
         description: "Write a technical blog post about SwiftUI and MVVM",
         summary: "Create technical content about iOS development",
@@ -36,7 +78,6 @@ var mockTasks: [TaskModel] = [
     ),
     TaskModel(
         id: 2,
-        userId: 1,
         title: "Implement user authentication",
         description: "Add user login and registration functionality",
         summary: "Setup user authentication system",
@@ -49,7 +90,6 @@ var mockTasks: [TaskModel] = [
     ),
     TaskModel(
         id: 3,
-        userId: 1,
         title: "Update app documentation",
         description: "Update README and API documentation",
         summary: "Maintain project documentation",
