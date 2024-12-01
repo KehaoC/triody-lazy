@@ -33,6 +33,11 @@ def create_task(request):
     )
     
     team = Team([], task)     
+
+    # 暂时直接开始运行任务 TODO: 需要优化
+    team.decompose_task()
+    team.run()
+
     response_data = {
         "task_id": team.task_id,
         "title": task.title,

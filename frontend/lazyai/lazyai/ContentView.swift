@@ -9,28 +9,34 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var taskViewModel = TaskViewModel()
+    @State private var selectedTab = 0
 
     var body: some View {
-        NavigationView {
-            TabView {
+        NavigationStack {
+            TabView(selection: $selectedTab) {
                 DesktopView(taskViewModel: taskViewModel)
                     .tabItem {
                         Label("Desktop", systemImage: "desktopcomputer")
-                        Text("Desktop")
                     }
+                    .tag(0)
                 NewCardView(taskViewModel: taskViewModel)
                     .tabItem {
-                        Label("New", systemImage: "plus")
-                        Text("New")
+                        Label("New", systemImage: "plus.circle.fill")
                     }
+                    .tag(1)
                 UserView()
                     .tabItem {
-                        Label("User", systemImage: "person")
-                        Text("User")
+                        Label("User", systemImage: "person.circle.fill")
                     }
+                    .tag(2)
             }
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                // ... existing toolbar ...
+            }
+            .tint(.primary)
+            .animation(.easeInOut, value: selectedTab)
         }
-        .navigationTitle("LazyAI")
         .enableInjection()
     }
 

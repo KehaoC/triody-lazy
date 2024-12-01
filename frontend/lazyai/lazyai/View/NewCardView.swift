@@ -2,8 +2,8 @@ import SwiftUI
 
 struct NewCardView: View {
     @ObservedObject var taskViewModel: TaskViewModel
-    @State private var title: String = "Test title"
-    @State private var description: String = "Test description"
+    @State private var title: String = ""
+    @State private var description: String = ""
     @State private var isEditingTitle = false
     @State private var isEditingDescription = false
     @State private var showToast = false
@@ -28,22 +28,30 @@ struct NewCardView: View {
             Spacer().frame(height: 20)
             
             // Title Section
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: isEditingTitle ? .leading : .center, spacing: 8) {
                 Text("Title")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
                     .padding(.horizontal)
                 
                 if isEditingTitle {
                     TextField("Enter title", text: $title)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.1))
+                        )
                         .padding(.horizontal)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
                 } else {
                     Text(title.isEmpty ? "Got some problems today?" : title)
-                        .font(.headline)
+                        .font(.system(size: 18, weight: .semibold))
                         .padding(.horizontal)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
                         .onTapGesture {
-                            withAnimation {
+                            withAnimation(.spring(response: 0.3)) {
                                 isEditingTitle = true
                             }
                         }
@@ -51,25 +59,35 @@ struct NewCardView: View {
             }
             
             // Description Section
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: isEditingDescription ? .leading : .center, spacing: 8) {
                 Text("Description")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
                     .padding(.horizontal)
                 
                 if isEditingDescription {
                     TextEditor(text: $description)
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.gray.opacity(0.1))
+                                )
+                        )
                         .frame(height: 100)
-                        .padding(4)
-                        .background(RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.gray.opacity(0.2)))
                         .padding(.horizontal)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
                 } else {
                     Text(description.isEmpty ? "Add some details..." : description)
-                        .font(.body)
+                        .font(.system(size: 16))
+                        .foregroundColor(description.isEmpty ? .gray : .primary)
                         .padding(.horizontal)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
                         .onTapGesture {
-                            withAnimation {
+                            withAnimation(.spring(response: 0.3)) {
                                 isEditingDescription = true
                             }
                         }
@@ -78,16 +96,25 @@ struct NewCardView: View {
             
             Spacer()
             
-            Text("Drag to the top to send to AI")
-                .font(.caption)
-                .foregroundColor(.gray)
-            
-            controlBar
+            // Drag Indicator
+            VStack(spacing: 6) {
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.6))
+                    .offset(y: offset.height / 10) // 添加拖拽反馈
+                
+                Text("Drag up to send")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
+            }
+            .padding(.bottom, 20)
         }
         .frame(width: 300, height: 400)
-        .background(.white)
-        .cornerRadius(20)
-        .shadow(radius: 10)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(.white)
+                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+        )
         .offset(x: offset.width, y: offset.height) // Apply the offset directly
         .opacity(cardOpacity)
         .gesture(
@@ -155,21 +182,22 @@ struct NewCardView: View {
             .padding(.bottom, 20)
     }
 
-    func toastCard(with info: String)->some View {
+    func toastCard(with info: String) -> some View {
         Text(info)
             .font(.system(size: 16, weight: .medium))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.black.opacity(0.75))
-                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.85))
+                    .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
             )
             .foregroundColor(.white)
             .opacity(showToast ? 1 : 0)
-            .animation(.spring(response: 0.6, dampingFraction: 0.7), value: showToast) // 增加 response 时间使动画变慢
-            .offset(y: showToast ? -150 : -200)
-            .blur(radius: showToast ? 0 : 2)
+            .scaleEffect(showToast ? 1 : 0.8)
+            .blur(radius: showToast ? 0 : 4)
+            .animation(.spring(response: 0.5, dampingFraction: 0.7), value: showToast)
+            .offset(y: showToast ? -180 : -220)
     }
 }
 

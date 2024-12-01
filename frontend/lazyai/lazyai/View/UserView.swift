@@ -7,20 +7,27 @@ struct UserView: View {
     @State private var password: String = ""
     
     var body: some View {
-
-        VStack {
+        VStack(spacing: 30) {
             Text("Lazy")
-                .font(.custom("Zapfino", size: 36))
-                .padding(.horizontal)
+                .font(.custom("Zapfino", size: 42))
+                .foregroundColor(.primary)
+                .shadow(radius: 2)
+                .padding(.top, 40)
+            
             if isLogin {
-                // 已登录状态
                 LoggedView
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
             } else {
-                // 未登录状态
                 LoginView
+                    .transition(.opacity.combined(with: .move(edge: .leading)))
             }
         }
         .padding()
+        .animation(.spring(response: 0.3), value: isLogin)
+        .background(
+            Color(.systemBackground)
+                .ignoresSafeArea()
+        )
         .enableInjection()
     }
 
@@ -29,56 +36,86 @@ struct UserView: View {
     #endif
 
     var LoggedView: some View {
-        VStack() {
+        VStack(spacing: 25) {
             Image(systemName: "person.circle.fill")
                 .resizable()
-                .frame(width: 100, height: 100)
-                .foregroundColor(.blue)
+                .frame(width: 120, height: 120)
+                .foregroundStyle(.linearGradient(colors: [.blue, .blue.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .shadow(radius: 5)
             
-            Text("Welcome back, \(username)")
+            Text("Welcome back,")
+                .font(.title2)
+                .foregroundColor(.secondary)
+            Text(username)
+                .font(.title.bold())
+                .foregroundColor(.primary)
 
             Button(action: {
-                isLogin = false 
-                username = ""
-                password = ""
+                withAnimation {
+                    isLogin = false 
+                    username = ""
+                    password = ""
+                }
             }) {
                 Text("Logout")
+                    .fontWeight(.semibold)
                     .foregroundColor(.white)
-                    .frame(width: 200, height: 40)
-                    .background(Color.red)
-                    .cornerRadius(8)
+                    .frame(width: 200, height: 45)
+                    .background(
+                        LinearGradient(colors: [.red, .red.opacity(0.8)], 
+                                     startPoint: .leading, 
+                                     endPoint: .trailing)
+                    )
+                    .cornerRadius(12)
+                    .shadow(radius: 3)
             }
         }
+        .padding(.horizontal)
     }
 
     var LoginView: some View {
-        VStack(spacing: 20) {
-            // Image(systemName: "person.circle")
-            //     .resizable()
-            //     .frame(width: 100, height: 100)
-            //     .foregroundColor(.gray)
-            
-            TextField("Username", text: $username)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .frame(width: 280)
-            
-            SecureField("Password", text: $password)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .frame(width: 280)
+        VStack(spacing: 25) {
+            VStack(spacing: 16) {
+                TextField("Username", text: $username)
+                    .textFieldStyle(.plain)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                    )
+                    .frame(width: 300)
+                
+                SecureField("Password", text: $password)
+                    .textFieldStyle(.plain)
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                    )
+                    .frame(width: 300)
+            }
             
             Button(action: {
-                // 登录操作
                 if !username.isEmpty && !password.isEmpty {
-                    isLogin = true
+                    withAnimation {
+                        isLogin = true
+                    }
                 }
             }) {
                 Text("Login")
+                    .fontWeight(.semibold)
                     .foregroundColor(.white)
-                    .frame(width: 200, height: 40)
-                    .background(Color.blue)
-                    .cornerRadius(8)
-            }   
+                    .frame(width: 300, height: 45)
+                    .background(
+                        LinearGradient(colors: [.blue, .blue.opacity(0.8)], 
+                                     startPoint: .leading, 
+                                     endPoint: .trailing)
+                    )
+                    .cornerRadius(12)
+                    .shadow(radius: 3)
+            }
         }
+        .padding(.horizontal)
     }
 }
 
