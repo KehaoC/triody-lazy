@@ -10,6 +10,7 @@ struct TaskModel: Codable, Identifiable {
     var isFinished: Bool
     let allSubtasksLazied: Bool
     var subtasks: [Subtask]?
+    var niumas: [NiumaModel]?
 
     init(title: String, description: String) {
         self.id = nil
@@ -19,6 +20,7 @@ struct TaskModel: Codable, Identifiable {
         self.isFinished = false
         self.allSubtasksLazied = false
         self.subtasks = nil
+        self.niumas = nil
     }
 
     init(id: Int, title: String, description: String, summary: String?, isFinished: Bool, allSubtasksLazied: Bool, subtasks: [Subtask]) {
@@ -29,6 +31,7 @@ struct TaskModel: Codable, Identifiable {
         self.isFinished = isFinished
         self.allSubtasksLazied = allSubtasksLazied
         self.subtasks = subtasks
+        self.niumas = nil
     }
 
     enum CodingKeys: String, CodingKey {
@@ -39,6 +42,7 @@ struct TaskModel: Codable, Identifiable {
         case isFinished = "is_finished"
         case allSubtasksLazied = "all_subtasks_lazied"
         case subtasks
+        case niumas
     }
 }
 

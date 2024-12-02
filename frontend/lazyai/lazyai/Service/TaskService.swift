@@ -1,39 +1,12 @@
 import Foundation
 
-struct APIResponse<T: Codable>: Codable {
-    let status: String
-    let message: String
-    let data: T
-}
+
 
 class TaskService {
     let baseUrl = "http://127.0.0.1:8000/team/"
     let token: String = "Bearer mocktoken"
 
-    struct TaskRequest: Codable {
-        let title: String
-        let description: String
-    }
 
-    struct SubtaskRequest: Codable {
-        let task_id: Int
-    }
-
-    struct TasksData: Codable {
-        let tasks: [TaskModel]
-    }
-
-    struct SubtasksData: Codable {
-        let subtasks: [SubtaskResponse]
-    }
-
-    struct SubtaskResponse: Codable {
-        let subtask_id: Int
-        let description: String
-        let agent_name: String
-        let is_lazied: Bool
-        let result: String?
-    }
 
     func createTask(title: String, description: String) async throws -> TaskModel {
         let url = URL(string: "\(baseUrl)create_task/")!
@@ -156,5 +129,39 @@ class TaskService {
             )
         }
         return subtasks
+    }
+}
+
+extension TaskService {
+
+    struct APIResponse<T: Codable>: Codable {
+        let status: String
+        let message: String
+        let data: T
+    }
+
+    struct TaskRequest: Codable {
+        let title: String
+        let description: String
+    }
+
+    struct SubtaskRequest: Codable {
+        let task_id: Int
+    }
+
+    struct TasksData: Codable {
+        let tasks: [TaskModel]
+    }
+
+    struct SubtasksData: Codable {
+        let subtasks: [SubtaskResponse]
+    }
+
+    struct SubtaskResponse: Codable {
+        let subtask_id: Int
+        let description: String
+        let agent_name: String
+        let is_lazied: Bool
+        let result: String?
     }
 }

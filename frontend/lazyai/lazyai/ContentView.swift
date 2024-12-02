@@ -9,12 +9,13 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var taskViewModel = TaskViewModel()
+	@StateObject private var niumaAssigner = NiumaAssigner()
     @State private var selectedTab = 0
 
     var body: some View {
         NavigationStack {
             TabView(selection: $selectedTab) {
-                DesktopView(taskViewModel: taskViewModel)
+				DesktopView(taskViewModel: taskViewModel, niumaAssigner: niumaAssigner)
                     .tabItem {
                         Label("Desktop", systemImage: "desktopcomputer")
                     }

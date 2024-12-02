@@ -1,58 +1,66 @@
 import SwiftUI
 struct TaskCard: View {
     let task: TaskModel
-    @State private var showDetail = false
+
     @ObservedObject var taskViewModel: TaskViewModel
+    @ObservedObject var niumaAssigner: NiumaAssigner
+
+    @State private var showSubtaskCard = false
     @State private var showDeleteAlert = false
     @State private var isLongPressed = false
 
     var body: some View {
         ZStack {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text(task.title)
-                        .font(.headline)
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    statusLabel(isFinished: task.isFinished)
-                }
+            if !showSubtaskCard {
+                // 简略任务卡
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        taskTitle
+                        Spacer()
+                        statusLabel(isFinished: task.isFinished)
+                    }
 
-                if !task.description.isEmpty {
-                    Text(task.description)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
-            }
-            .padding()
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
-            .animation(.easeInOut(duration: 0.2), value: isLongPressed)
-            .gesture(
-                LongPressGesture(minimumDuration: 0.5)
-                    .onChanged { _ in
-                        isLongPressed = true
+                    if !task.description.isEmpty {
+                        taskDescription
                     }
-                    .onEnded { _ in
-                        isLongPressed = false
-                        showDeleteAlert = true
+
+                    // NiumaTaskProgressView(task: task, niumaAssigner: niumaAssigner)
+                    HStack {
+                        ForEach(niumaAssigner.filterNiumas(with: task.id!)) { niuma in
+                            NiumaInTask(niuma: niuma)
+                        }
                     }
-            )
-            .onTapGesture {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                    showDetail.toggle()
+                    niumaDropArea
                 }
-            }
-            
-            if showDetail {
-                DetailCardView(task: task, taskViewModel: taskViewModel, isShowing: $showDetail)
+                .padding()
+                .background(Color(.systemBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+                .gesture(
+                    LongPressGesture(minimumDuration: 0.5)
+                        .onChanged { _ in
+                            isLongPressed = true
+                        }
+                        .onEnded { _ in
+                            isLongPressed = false
+                            showDeleteAlert = true
+                        }
+                )
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                        showSubtaskCard.toggle()
+                    }
+                }
+            } else {
+                // 详细任务卡
+                SubtaskCardView(task: task, isShowing: $showSubtaskCard)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.9).combined(with: .opacity),
                         removal: .scale(scale: 0.9).combined(with: .opacity)
                     ))
                     .shadow(color: .black.opacity(0.2), radius: 10)
             }
+            
         }
         .alert("Delete Task", isPresented: $showDeleteAlert) {
             Button("Delete", role: .destructive) {
@@ -68,7 +76,12 @@ struct TaskCard: View {
         } message: {
             Text("Are you sure you want to delete this task?")
         }
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 
     func statusLabel(isFinished: Bool) -> some View {
         Text(isFinished ? "Finished" : "Not Finished")
@@ -90,14 +103,35 @@ struct TaskCard: View {
                 }
             }
     }
-    #if DEBUG
-    @ObserveInjection var forceRedraw
-    #endif  
+
+    var taskTitle: some View {
+        Text(task.title)
+            .font(.headline)
+            .foregroundStyle(.primary)
+    }
+
+    var taskDescription: some View {
+        Text(task.description)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+    }
+
+    var niumaDropArea: some View {
+		RoundedRectangle(cornerRadius: 12)
+			.fill(.gray.opacity(0.1))
+			.frame(height: 44)
+			.overlay(
+				Text("Drop here")
+					.foregroundColor(.gray)
+			)
+	}
+
+
 }
 
-struct DetailCardView: View {
+struct SubtaskCardView: View {
     let task: TaskModel
-    @ObservedObject var taskViewModel: TaskViewModel
     @Binding var isShowing: Bool
     
     var body: some View {
@@ -108,7 +142,7 @@ struct DetailCardView: View {
                     .font(.title2.bold())
                 Spacer()
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                         isShowing = false
                     }
                 } label: {
@@ -157,7 +191,12 @@ struct DetailCardView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 60)
         .rotation3DEffect(.degrees(5), axis: (x: 1, y: 0, z: 0))
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 }
 
 struct ExpandableSubtaskRow: View {
@@ -212,7 +251,12 @@ struct ExpandableSubtaskRow: View {
             }
         }
         .animation(.easeInOut, value: subtask.isLazied)
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
     
     func isLaziedIcon(isLazied: Bool) -> some View {
         Image(systemName: isLazied ? "checkmark.circle.fill" : "circle")
