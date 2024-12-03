@@ -65,7 +65,7 @@ struct SignInView: View {
 
             Button(action: {
                 Task {
-                    try await userViewModel.signIn()
+                    try await userViewModel.signInWithEmail()
                 }
             }) {
                 if userViewModel.isLoading {
@@ -141,7 +141,7 @@ struct SignUpView: View {
             
             Button(action: {
                 Task {
-                    try await userViewModel.signUp()
+                    try await userViewModel.signUpWithEmail()
                 }
             }) {
                 if userViewModel.isLoading {
