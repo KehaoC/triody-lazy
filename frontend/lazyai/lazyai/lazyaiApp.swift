@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import GoogleSignIn
 
 @main
 struct LazyAIApp: App {
@@ -17,12 +16,6 @@ struct LazyAIApp: App {
 		WindowGroup {
 			ContentView()
                 .environmentObject(userViewModel)
-                .onOpenURL { url in
-                    userViewModel.handleSignInURL(url)
-                }
-                .onAppear {
-                    userViewModel.checkPreviousSignIn()
-                }
 		}
 	}
 }
