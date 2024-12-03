@@ -25,7 +25,7 @@ struct ContentView: View {
                         Label("New", systemImage: "plus.circle.fill")
                     }
                     .tag(1)
-                UserView()
+                AuthView()
                     .tabItem {
                         Label("User", systemImage: "person.circle.fill")
                     }

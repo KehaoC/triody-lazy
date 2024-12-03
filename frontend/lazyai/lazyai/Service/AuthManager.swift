@@ -34,4 +34,14 @@ class AuthManager{
             accessToken: session.accessToken
         )
     }
+
+    func signOut() async throws{
+        print("Sign out")
+        do {
+            try await client.auth.signOut()
+        } catch {
+            print("Sign out error: \(error)")
+            throw error
+        }
+    }
 }

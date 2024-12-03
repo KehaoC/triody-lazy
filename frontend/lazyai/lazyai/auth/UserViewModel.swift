@@ -1,5 +1,5 @@
 import Foundation
-
+import SwiftUI
 @MainActor
 class UserViewModel: ObservableObject {
     // 输入值
@@ -17,19 +17,26 @@ class UserViewModel: ObservableObject {
     @Published var user: UserModel?
     
     func signInWithEmail() async throws {
-        print("Sign in")
+        isLoading = true 
+        defer { isLoading = false }
+
         if isFormValid(email: email, password: password) {
             self.user = try await AuthManager.shared.signInWithEmail(email: email, password: password)
+            print("Sign in success")
+            isAuthenticated = true
         } else {
             print("Form is not valid")
             throw NSError()
         }
     }
     
+    // TODO: 注册的时候能直接拿到 token 吗
     func signUpWithEmail() async throws {
-        print("Sign up")
+        isLoading = true 
+        defer { isLoading = false }
         if isFormValid(email: email, password: password) {
             self.user = try await AuthManager.shared.signUpWithEmail(name: name, email: email, password: password)
+            print("Sign up success")
         } else {
             print("Form is not valid")
             throw NSError()
@@ -37,7 +44,8 @@ class UserViewModel: ObservableObject {
     }
 
     func signOut() async throws {
-        print("Sign out")
+        try await AuthManager.shared.signOut()
+        isAuthenticated = false
     }
 
     // TODO: 丰富表单验证逻辑

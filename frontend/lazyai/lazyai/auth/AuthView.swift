@@ -1,12 +1,13 @@
 import SwiftUI
 
-struct UserView: View {
+struct AuthView: View {
     @EnvironmentObject private var userViewModel: UserViewModel
     @State private var showSignUp = false
 
     var body: some View {
         if userViewModel.isAuthenticated {
             ProfileView()
+                .transition(.move(edge: .bottom))
         } else {
             if showSignUp {
                 SignUpView(showSignUp: $showSignUp)
@@ -82,7 +83,9 @@ struct SignInView: View {
                 Text("Don't have an account yet?")
                     .foregroundStyle(.gray)
                 Button("Sign up") {
-                    showSignUp = true
+                    withAnimation {
+                        showSignUp = true
+                    }
                 }
                     .foregroundStyle(.black)
                     .fontWeight(.bold)
@@ -158,7 +161,9 @@ struct SignUpView: View {
                 Text("Already have an account?")
                     .foregroundStyle(.gray)
                 Button("Sign in") {
-                    showSignUp = false
+                    withAnimation {
+                        showSignUp = false
+                    }
                 }
                 .foregroundStyle(.black)
                 .fontWeight(.bold)
