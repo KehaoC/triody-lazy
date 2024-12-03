@@ -6,14 +6,25 @@
 //
 
 import SwiftUI
+import GoogleSignIn
 
 @main
 struct LazyAIApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
+
+    @StateObject private var userViewModel = UserViewModel()
+
+	var body: some Scene {
+		WindowGroup {
+			ContentView()
+                .environmentObject(userViewModel)
+                .onOpenURL { url in
+                    userViewModel.handleSignInURL(url)
+                }
+                .onAppear {
+                    userViewModel.checkPreviousSignIn()
+                }
+		}
+	}
 }
 
 #if canImport(HotSwiftUI)

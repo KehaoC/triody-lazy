@@ -1,16 +1,16 @@
 import Foundation
+import GoogleSignIn
 
-struct UserModel: Codable, Identifiable {
-    let id: Int
-    let name: String
+struct UserModel {
+    let id: String
     let email: String
-    let password: String
+    let name: String
+    let profileImageUrl: String?
     
-    // 将 user_id 映射为 id
-    enum CodingKeys: String, CodingKey {
-        case id = "user_id"
-        case name
-        case email
-        case password
+    init(id: String, email: String, name: String, profileImageUrl: String? = nil) {
+        self.id = id
+        self.email = email
+        self.name = name
+        self.profileImageUrl = profileImageUrl
     }
 }

@@ -7,6 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7633FCAB2CFDC0FC0058A098 /* credentials.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7633FCAA2CFDC0FC0058A098 /* credentials.plist */; };
+		769525F92CFDCFBD00957DE2 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 769525F82CFDCFBD00957DE2 /* Auth */; };
+		769525FB2CFDCFBD00957DE2 /* Functions in Frameworks */ = {isa = PBXBuildFile; productRef = 769525FA2CFDCFBD00957DE2 /* Functions */; };
+		769525FD2CFDCFBD00957DE2 /* PostgREST in Frameworks */ = {isa = PBXBuildFile; productRef = 769525FC2CFDCFBD00957DE2 /* PostgREST */; };
+		769525FF2CFDCFBD00957DE2 /* Realtime in Frameworks */ = {isa = PBXBuildFile; productRef = 769525FE2CFDCFBD00957DE2 /* Realtime */; };
+		769526012CFDCFBD00957DE2 /* Storage in Frameworks */ = {isa = PBXBuildFile; productRef = 769526002CFDCFBD00957DE2 /* Storage */; };
+		769526352CFDD1FB00957DE2 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 769526342CFDD1FB00957DE2 /* Supabase */; };
+		76B4D62B2CFDB44500F5E4E6 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 76B4D62A2CFDB44500F5E4E6 /* GoogleSignIn */; };
+		76B4D62D2CFDB44500F5E4E6 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 76B4D62C2CFDB44500F5E4E6 /* GoogleSignInSwift */; };
 		76FD1CF92CF6E53900786ADD /* Inject in Frameworks */ = {isa = PBXBuildFile; productRef = 76FD1CF82CF6E53900786ADD /* Inject */; };
 /* End PBXBuildFile section */
 
@@ -31,11 +40,25 @@
 		7600F0392CF1C15A00A73E06 /* LazyAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LazyAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7600F0492CF1C15B00A73E06 /* LazyAITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LazyAITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		7600F0532CF1C15B00A73E06 /* LazyAIUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LazyAIUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		7633FCAA2CFDC0FC0058A098 /* credentials.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = credentials.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		7633FCAD2CFDC2100058A098 /* Exceptions for "LazyAI" folder in "LazyAI" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7600F0382CF1C15A00A73E06 /* LazyAI */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7600F03B2CF1C15A00A73E06 /* LazyAI */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				7633FCAD2CFDC2100058A098 /* Exceptions for "LazyAI" folder in "LazyAI" target */,
+			);
 			path = LazyAI;
 			sourceTree = "<group>";
 		};
@@ -56,7 +79,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				769525FF2CFDCFBD00957DE2 /* Realtime in Frameworks */,
+				769525FD2CFDCFBD00957DE2 /* PostgREST in Frameworks */,
+				769525FB2CFDCFBD00957DE2 /* Functions in Frameworks */,
+				76B4D62D2CFDB44500F5E4E6 /* GoogleSignInSwift in Frameworks */,
+				769526012CFDCFBD00957DE2 /* Storage in Frameworks */,
+				769526352CFDD1FB00957DE2 /* Supabase in Frameworks */,
 				76FD1CF92CF6E53900786ADD /* Inject in Frameworks */,
+				769525F92CFDCFBD00957DE2 /* Auth in Frameworks */,
+				76B4D62B2CFDB44500F5E4E6 /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -84,6 +115,8 @@
 				7600F04C2CF1C15B00A73E06 /* LazyAITests */,
 				7600F0562CF1C15B00A73E06 /* LazyAIUITests */,
 				7600F03A2CF1C15A00A73E06 /* Products */,
+				7633FCAA2CFDC0FC0058A098 /* credentials.plist */,
+				769526332CFDD1FB00957DE2 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -95,6 +128,13 @@
 				7600F0532CF1C15B00A73E06 /* LazyAIUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		769526332CFDD1FB00957DE2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -118,6 +158,14 @@
 			name = LazyAI;
 			packageProductDependencies = (
 				76FD1CF82CF6E53900786ADD /* Inject */,
+				76B4D62A2CFDB44500F5E4E6 /* GoogleSignIn */,
+				76B4D62C2CFDB44500F5E4E6 /* GoogleSignInSwift */,
+				769525F82CFDCFBD00957DE2 /* Auth */,
+				769525FA2CFDCFBD00957DE2 /* Functions */,
+				769525FC2CFDCFBD00957DE2 /* PostgREST */,
+				769525FE2CFDCFBD00957DE2 /* Realtime */,
+				769526002CFDCFBD00957DE2 /* Storage */,
+				769526342CFDD1FB00957DE2 /* Supabase */,
 			);
 			productName = LazyAI;
 			productReference = 7600F0392CF1C15A00A73E06 /* LazyAI.app */;
@@ -203,6 +251,8 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				76FD1CF72CF6E53900786ADD /* XCRemoteSwiftPackageReference "Inject" */,
+				76B4D6292CFDB44500F5E4E6 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				769525F72CFDCFBD00957DE2 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 7600F03A2CF1C15A00A73E06 /* Products */;
@@ -221,6 +271,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7633FCAB2CFDC0FC0058A098 /* credentials.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -330,6 +381,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
@@ -391,6 +443,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
@@ -412,6 +465,7 @@
 				DEVELOPMENT_TEAM = RS949WW7SG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LazyAI/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -441,6 +495,7 @@
 				DEVELOPMENT_TEAM = RS949WW7SG;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = LazyAI/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -573,6 +628,22 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		769525F72CFDCFBD00957DE2 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+		76B4D6292CFDB44500F5E4E6 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.0.0;
+			};
+		};
 		76FD1CF72CF6E53900786ADD /* XCRemoteSwiftPackageReference "Inject" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/krzysztofzablocki/Inject";
@@ -584,6 +655,46 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		769525F82CFDCFBD00957DE2 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 769525F72CFDCFBD00957DE2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Auth;
+		};
+		769525FA2CFDCFBD00957DE2 /* Functions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 769525F72CFDCFBD00957DE2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Functions;
+		};
+		769525FC2CFDCFBD00957DE2 /* PostgREST */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 769525F72CFDCFBD00957DE2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = PostgREST;
+		};
+		769525FE2CFDCFBD00957DE2 /* Realtime */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 769525F72CFDCFBD00957DE2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Realtime;
+		};
+		769526002CFDCFBD00957DE2 /* Storage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 769525F72CFDCFBD00957DE2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Storage;
+		};
+		769526342CFDD1FB00957DE2 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 769525F72CFDCFBD00957DE2 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		76B4D62A2CFDB44500F5E4E6 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76B4D6292CFDB44500F5E4E6 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		76B4D62C2CFDB44500F5E4E6 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76B4D6292CFDB44500F5E4E6 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
 		76FD1CF82CF6E53900786ADD /* Inject */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 76FD1CF72CF6E53900786ADD /* XCRemoteSwiftPackageReference "Inject" */;
