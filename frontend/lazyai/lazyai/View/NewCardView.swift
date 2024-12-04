@@ -1,13 +1,23 @@
 import SwiftUI
 
 struct NewCardView: View {
+
     @ObservedObject var taskViewModel: TaskViewModel
+    @EnvironmentObject var userViewModel: UserViewModel
+
+    // 卡片内容
     @State private var title: String = ""
     @State private var description: String = ""
+
+    // 卡片状态
     @State private var isEditingTitle = false
     @State private var isEditingDescription = false
+
+    // Toast 提示
     @State private var showToast = false
     @State private var toastInfo: String = ""
+
+    // 卡片动画
     @State private var cardOpacity: Double = 1.0
     @State private var offset: CGSize = .zero // Use a single offset variable
     
@@ -170,9 +180,7 @@ struct NewCardView: View {
                     }
                 }
         )
-        .onTapGesture {
-            // Remove this since we now have separate tap gestures
-        }
+
     }
 
     var controlBar: some View {

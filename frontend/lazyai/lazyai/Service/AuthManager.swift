@@ -8,24 +8,24 @@ class AuthManager{
 
     let client = SupabaseClient(supabaseURL: URL(string: "https://eraslmtrxqzkjsdrsnjh.supabase.co")!, supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYXNsbXRyeHF6a2pzZHJzbmpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMyNzk3NjIsImV4cCI6MjA0ODg1NTc2Mn0.E6lxRJcSAr4Ro3mAjvlNAQvKs-p-eHtTzDfqeEo52Z8")
 
-    func signUpWithEmail(name: String, email: String, password: String) async throws -> UserModel {
+    func signUpWithEmail(email: String, password: String) async throws -> UserModel {
         let signUpAuthResponse = try await client.auth.signUp(email: email, password: password)
         guard let session = signUpAuthResponse.session else {
             throw NSError()
         }
         print("Sign up with email: \(signUpAuthResponse)")
 
+        // TODO：注册的时候名字写到哪个表中呢？
         return UserModel(
             id: signUpAuthResponse.user.id, 
             email: signUpAuthResponse.user.email ?? "", 
-            name: name, 
+            name: signUpAuthResponse.user.email ?? "", 
             accessToken: session.accessToken
         )
     }
 
     func signInWithEmail(email: String, password: String) async throws -> UserModel {
         let session = try await client.auth.signIn(email: email, password: password)
-        print("Sign in with email: \(session)")
 
         return UserModel(
             id: session.user.id, 

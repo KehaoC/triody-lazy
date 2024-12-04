@@ -18,10 +18,14 @@ def create_task(request):
     try:
         data = json.loads(request.body)
     except json.JSONDecodeError:
+        print("Invalid JSON format")
         raise APIError("Invalid JSON format", status_code=400)
         
     task_description = data.get("description")
     task_title = data.get("title")
+
+    print(f"Task title: {task_title}")
+    print(f"Task description: {task_description}")
     
     if not task_description:
         raise APIError("Task description is required")
@@ -33,10 +37,6 @@ def create_task(request):
     )
     
     team = Team([], task)     
-
-    # 暂时直接开始运行任务 TODO: 需要优化
-    team.decompose_task()
-    team.run()
 
     response_data = {
         "task_id": team.task_id,

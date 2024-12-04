@@ -1,11 +1,8 @@
 import Foundation
 import SwiftUI
+
 @MainActor
 class UserViewModel: ObservableObject {
-    // 输入值
-    @Published var email: String = ""
-    @Published var password: String = ""
-    @Published var name: String = ""
     
     // 状态
     @Published var isLoading: Bool = false
@@ -13,17 +10,24 @@ class UserViewModel: ObservableObject {
     @Published var isAuthenticated = false
 
     // 用户信息
-    @Published var accessToken: String?  // TODO: 添加 accessToken 的逻辑
     @Published var user: UserModel?
     
-    func signInWithEmail() async throws {
+    func signInWithEmail(email: String, password: String) async throws {
         isLoading = true 
         defer { isLoading = false }
 
         if isFormValid(email: email, password: password) {
-            self.user = try await AuthManager.shared.signInWithEmail(email: email, password: password)
-            print("Sign in success")
-            isAuthenticated = true
+            do {
+                self.user = try await AuthManager.shared.signInWithEmail(email: email, password: password)
+                print(self.user?.accessToken ?? "no access token")
+                if let token = self.user?.accessToken {
+                    try KeychainManager.save(token: token)
+                }
+                isAuthenticated = true
+            } catch {
+                print("Sign in failed: \(error)")
+                throw error
+            }
         } else {
             print("Form is not valid")
             throw NSError()
@@ -31,11 +35,11 @@ class UserViewModel: ObservableObject {
     }
     
     // TODO: 注册的时候能直接拿到 token 吗
-    func signUpWithEmail() async throws {
+    func signUpWithEmail(email: String, password: String) async throws {
         isLoading = true 
         defer { isLoading = false }
         if isFormValid(email: email, password: password) {
-            self.user = try await AuthManager.shared.signUpWithEmail(name: name, email: email, password: password)
+            self.user = try await AuthManager.shared.signUpWithEmail(email: email, password: password)
             print("Sign up success")
         } else {
             print("Form is not valid")
@@ -45,6 +49,7 @@ class UserViewModel: ObservableObject {
 
     func signOut() async throws {
         try await AuthManager.shared.signOut()
+        try KeychainManager.deleteToken()
         isAuthenticated = false
     }
 
@@ -54,6 +59,10 @@ class UserViewModel: ObservableObject {
             return false
         }
         return true
+    }
+
+    var accessToken: String? {
+        return user?.accessToken
     }
 }
 

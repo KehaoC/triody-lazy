@@ -4,8 +4,12 @@ import Foundation
 
 class TaskService {
     let baseUrl = "http://127.0.0.1:8000/team/"
-    let token: String = "Bearer mocktoken"
+    let token: String
 
+    init() {
+        let accessToken = try! KeychainManager.getToken() ?? ""
+        self.token = "Bearer \(accessToken)"
+    }
 
 
     func createTask(title: String, description: String) async throws -> TaskModel {
