@@ -6,7 +6,7 @@ class AuthManager{
 
     private init() {}
 
-    let client = SupabaseClient(supabaseURL: URL(string: "https://rwouxkvsjqcrnlfhplxq.supabase.co")!, supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3b3V4a3ZzanFjcm5sZmhwbHhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzIwMTk2MDEsImV4cCI6MjA0NzU5NTYwMX0.UmQ89tJXM1rX-rsGwq7cv9NY9QJPxmm4zwctmaPxOK8")
+    let client = SupabaseClient(supabaseURL: URL(string: "https://eraslmtrxqzkjsdrsnjh.supabase.co")!, supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYXNsbXRyeHF6a2pzZHJzbmpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzMyNzk3NjIsImV4cCI6MjA0ODg1NTc2Mn0.E6lxRJcSAr4Ro3mAjvlNAQvKs-p-eHtTzDfqeEo52Z8")
 
     func signUpWithEmail(name: String, email: String, password: String) async throws -> UserModel {
         let signUpAuthResponse = try await client.auth.signUp(email: email, password: password)
