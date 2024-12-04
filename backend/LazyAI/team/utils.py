@@ -3,7 +3,8 @@ import json
 from functools import wraps
 from django.http import JsonResponse
 from typing import Optional, Any, Dict, List
-
+from supabase import create_client, Client
+from django.conf import settings
 def beautyprint(processes: List[Dict]):
     # 初始化 colorama
     init()
@@ -102,7 +103,21 @@ def require_auth(view_func):
         return view_func(request, *args, **kwargs)
     return wrapper
 
-def get_user_id_by_token(token: str) -> int:
-    # TODO: 验证逻辑
-    # 简化，直接写死
-    return 1
+def get_user_id_by_token(token: str) -> Optional[str]:
+    try:
+        # 创建 Supabase 客户端
+        supabase: Client = create_client(
+            settings.SUPABASE_URL,
+            settings.SUPABASE_KEY
+        )
+        
+        # 获取用户信息
+        user = supabase.auth.get_user(token)
+        
+        if not user or not user.user:
+            raise APIError("Invalid token: no user found", status_code=401)
+            
+        return str(user.user.id)  # 返回用户 UUID
+        
+    except Exception as e:
+        raise APIError(f"Token verification failed: {str(e)}", status_code=401)

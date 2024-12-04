@@ -114,8 +114,8 @@ def text_enhancer(search_ai_name: str, search_results, refine_ai_name: str,syste
         pass
 
 # 定义不同 Agent 的特定功能
-def writer_chat(system_prompt, user_prompt):
-    return "Something2"
+def outline_writer_chat(system_prompt, user_prompt):
+    return get_response(system_prompt, user_prompt, client="groq")
 
 def searcher_chat(system_prompt, user_prompt):
     #return get_response(system_prompt, user_prompt, client="zhipuai")
@@ -131,7 +131,7 @@ def coder_chat(system_prompt, user_prompt):
 # 函数映射字典
 functions = {
     "Leader": leader_chat,
-    "Writer": writer_chat,
+    "Outline_Writer": outline_writer_chat,
     "Searcher": searcher_chat,
     "Coder": coder_chat,
 }
@@ -146,7 +146,7 @@ class Agent:
         return self.chat_function(self.system_prompt, user_prompt)
 
 default_executors = [
-    Agent("Writer", writer_system_prompt),
+    Agent("Outline_Writer", outline_writer_system_prompt),
     Agent("Searcher", searcher_system_prompt),
     Agent("Coder", coder_system_prompt),
 ]
