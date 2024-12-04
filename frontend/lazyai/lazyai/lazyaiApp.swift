@@ -11,11 +11,15 @@ import SwiftUI
 struct LazyAIApp: App {
 
     @StateObject private var userViewModel = UserViewModel()
+	@StateObject private var taskManager = TaskManager()
+	@StateObject private var niumaManager = NiumaManager()
 
 	var body: some Scene {
 		WindowGroup {
 			ContentView()
                 .environmentObject(userViewModel)
+				.environmentObject(taskManager)
+				.environmentObject(niumaManager)
 		}
 	}
 }

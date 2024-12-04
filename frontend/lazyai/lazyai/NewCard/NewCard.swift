@@ -1,8 +1,8 @@
 import SwiftUI
 
-struct NewCardView: View {
+struct NewCard: View {
 
-    @ObservedObject var taskViewModel: TaskViewModel
+    @EnvironmentObject var taskManager: TaskManager
     @EnvironmentObject var userViewModel: UserViewModel
 
     // 卡片内容
@@ -148,7 +148,7 @@ struct NewCardView: View {
                         showToast = true
                         print("create task: \(title)")
                         Task {
-                            try await taskViewModel.createTask(title: title, description: description)
+                            try await taskManager.createTask(title: title, description: description)
                         }
 
                         // 3. 重置卡片状态并归位
@@ -207,8 +207,4 @@ struct NewCardView: View {
             .animation(.spring(response: 0.5, dampingFraction: 0.7), value: showToast)
             .offset(y: showToast ? -180 : -220)
     }
-}
-
-#Preview {
-    NewCardView(taskViewModel: TaskViewModel())
 }

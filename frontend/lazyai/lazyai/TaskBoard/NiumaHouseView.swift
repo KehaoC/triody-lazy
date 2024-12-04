@@ -8,6 +8,7 @@
 
 import SwiftUI
 
+// MARK: - 主页面下方的空闲 niuma
 struct NiumaHouseView: View {
 	// TODO: 牛马屋
 	// 牛马屋的牛马们可以被拖拽到任务卡上
@@ -15,17 +16,13 @@ struct NiumaHouseView: View {
 	// 用户可以雇佣和升级更好的牛马
 	// 用户可以解雇牛马
 	// 用户可以查看牛马的属性
-	@ObservedObject var niumaAssigner: NiumaAssigner
-
-	init() {
-		self.niumaAssigner = NiumaAssigner()
-	}
+	@EnvironmentObject var niumaManager: NiumaManager
 
 	var body: some View {
 		ScrollView(.horizontal, showsIndicators: true) {
 			HStack(spacing: 12) {
-				ForEach(niumaAssigner.niumas) { niuma in
-					NiumaTagView(niuma: niuma)
+				ForEach(niumaManager.niumasInHome, id: \.id) { niuma in
+					LazyNiuma(niuma: niuma)
 				}
 			}
 		}
@@ -37,11 +34,12 @@ struct NiumaHouseView: View {
 	@ObserveInjection var forceRedraw
 	#endif
 
-	struct NiumaTagView: View {
-		let niuma: NiumaModel
-		@State private var showNiumaTagDetail: Bool = false
+	struct LazyNiuma: View {
+		// LazyNiuma 是在牛马屋中休息的牛马，没有任何事情做
+		let niuma: NiumaInHome
+		@State private var showNiumaDetail: Bool = false
 
-		init(niuma: NiumaModel) {
+		init(niuma: NiumaInHome) {
 			self.niuma = niuma
 		}
 
@@ -55,9 +53,7 @@ struct NiumaHouseView: View {
 				RoundedRectangle(cornerRadius: 12)
 					.fill(
 						LinearGradient(
-							colors: niuma.taskId == nil ? 
-								[Color.blue.opacity(0.2), Color.indigo.opacity(0.2)] :
-								[Color.gray.opacity(0.3), Color.gray.opacity(0.3)],
+							colors: [Color.blue.opacity(0.2), Color.indigo.opacity(0.2)],
 							startPoint: .topLeading,
 							endPoint: .bottomTrailing
 						)
@@ -65,16 +61,15 @@ struct NiumaHouseView: View {
 			)
 			.overlay(
 				RoundedRectangle(cornerRadius: 12)
-					.stroke(niuma.taskId == nil ? Color.blue.opacity(0.5) : Color.gray.opacity(0.5), lineWidth: 2)
+					.stroke(Color.gray.opacity(0.5), lineWidth: 2)
 			)
 			.clipShape(RoundedRectangle(cornerRadius: 12))
-			.shadow(color: niuma.taskId == nil ? .blue.opacity(0.2) : .gray.opacity(0.2), radius: 5, x: 0, y: 2)
-			.opacity(niuma.taskId == nil ? 1.0 : 0.7)
+			.shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
 			.onTapGesture {
-				showNiumaTagDetail = true
+				showNiumaDetail = true
 			}
-			.popover(isPresented: $showNiumaTagDetail) {
-				NiumaTagDetailView(niuma: niuma)
+			.popover(isPresented: $showNiumaDetail) {
+				LazyNiumaDetail(niuma: niuma)
 			}
 		    .enableInjection()
 		}
@@ -86,22 +81,53 @@ struct NiumaHouseView: View {
 		var niumaName: some View {
 			Text(niuma.name)
 				.font(.system(size: 16, weight: .bold, design: .monospaced))
-				.foregroundColor(niuma.taskId == nil ? .blue : .gray)
 		}
 
 		var niumaAvatar: some View {
-			Image(systemName: niuma.avatar)
+			// 根据牛马的名字显示不同的头像
+			if niuma.name == "coder" {
+				Image(systemName: "laptopcomputer")
+					.foregroundStyle(.secondary)
+			} else if niuma.name == "searcher" {
+				Image(systemName: "magnifyingglass")
+					.foregroundStyle(.secondary)
+			} else if niuma.name == "writer" {
+				Image(systemName: "pencil")
+					.foregroundStyle(.secondary)
+			} else {
+				Image(systemName: "person.fill")
+					.foregroundStyle(.secondary)
+			}
+		}
+	}
+}
+struct NiumaAvatar: View {
+	var name: String
+
+	var body: some View {
+		if name == "coder" {
+			Image(systemName: "laptopcomputer")
+				.foregroundStyle(.secondary)
+		} else if name == "searcher" {
+			Image(systemName: "magnifyingglass")
+				.foregroundStyle(.secondary)
+		} else if name == "writer" {
+			Image(systemName: "pencil")
+				.foregroundStyle(.secondary)
+		} else {
+			Image(systemName: "person.fill")
 				.foregroundStyle(.secondary)
 		}
 	}
 }
 
-struct NiumaTagDetailView: View {
-	let niuma: NiumaModel
+// MARK: - TODO 还没有想好要怎么设计
+struct LazyNiumaDetail: View {
+	let niuma: NiumaInHome
 
 	var body: some View {
 		VStack {
-			Text(niuma.description)
+			Text(niuma.name)
 		}
 		.padding()
 	    .enableInjection()
@@ -112,11 +138,11 @@ struct NiumaTagDetailView: View {
 	#endif
 }
 
-struct NiumaInTask: View {
-	let niuma: NiumaModel
+struct NiumaInTaskCard: View {
+	let niuma: NiumaDetail
 	@State private var showPopoverDetail: Bool = false
 
-	init(niuma: NiumaModel) {
+	init(niuma: NiumaDetail) {
 		self.niuma = niuma
 	}
 
@@ -135,7 +161,7 @@ struct NiumaInTask: View {
 	@ObserveInjection var forceRedraw
 	#endif
 
-	func progressBar(for niuma: NiumaModel) -> some View {
+	func progressBar(for niuma: NiumaDetail) -> some View {
 		ProgressView(value: niuma.progress)
 			.progressViewStyle(LinearProgressViewStyle())
 	}
@@ -146,8 +172,7 @@ struct NiumaInTask: View {
 				Text(niuma.name)
 					.font(.system(size: 16, weight: .bold, design: .rounded))
 					.italic()
-				Image(systemName: niuma.avatar)
-					.foregroundStyle(.secondary)
+				NiumaAvatar(name: niuma.name)
 				if niuma.progress >= 1.0 {
 					Image(systemName: "checkmark.circle.fill")
 						.foregroundStyle(.green)
@@ -191,7 +216,6 @@ struct NiumaInTask: View {
 				VStack(spacing: 4) {
 					dynamicProgressBar(for: niuma)
 						.frame(height: 8)
-						.padding(.horizontal, 16)
 					
 					Text("\(Int(niuma.progress * 100))%")
 						.font(.caption)
@@ -320,8 +344,7 @@ struct NiumaInTask: View {
 	}
 
 	var roundedNiumaAvatar: some View {
-		Image(systemName: niuma.avatar)
-			.foregroundStyle(.secondary)
+		NiumaAvatar(name: niuma.name)
 			.symbolEffect(.bounce, value: 1.5)
 	}	
 
@@ -337,7 +360,7 @@ struct NiumaInTask: View {
 			.foregroundStyle(.secondary)
 	}
 
-	func dynamicProgressBar(for niuma: NiumaModel) -> some View {
+	func dynamicProgressBar(for niuma: NiumaDetail) -> some View {
 		ProgressView(value: niuma.progress)
 			.progressViewStyle(LinearProgressViewStyle())
 			.animation(.easeInOut, value: niuma.progress)
