@@ -33,6 +33,11 @@ def create_task(request):
     )
     
     team = Team([], task)     
+
+    # 暂时直接开始运行任务 TODO: 需要优化
+    team.decompose_task()
+    team.run()
+
     response_data = {
         "task_id": team.task_id,
         "title": task.title,
@@ -142,7 +147,7 @@ def modify_task_status(request):
 
 
 @csrf_exempt
-@require_http_methods(["GET"])
+@require_http_methods(["POST"])
 @api_error_handler
 @require_auth
 def get_subtasks(request):
@@ -183,6 +188,7 @@ def get_subtasks(request):
         }
         for subtask in subtasks
     ]
+    print(subtasks_data)
 
     return api_response(
         data={"subtasks": subtasks_data},

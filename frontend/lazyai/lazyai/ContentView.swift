@@ -9,34 +9,39 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var taskViewModel = TaskViewModel()
+	@StateObject private var niumaAssigner = NiumaAssigner()
+    @State private var selectedTab = 0
 
     var body: some View {
-        NavigationView {
-            TabView {
-                DesktopView(taskViewModel: taskViewModel)
+        NavigationStack {
+            TabView(selection: $selectedTab) {
+				DesktopView(taskViewModel: taskViewModel, niumaAssigner: niumaAssigner)
                     .tabItem {
                         Label("Desktop", systemImage: "desktopcomputer")
-                        Text("Desktop")
                     }
+                    .tag(0)
                 NewCardView(taskViewModel: taskViewModel)
                     .tabItem {
-                        Label("New", systemImage: "plus")
-                        Text("New")
+                        Label("New", systemImage: "plus.circle.fill")
                     }
-                UserView()
+                    .tag(1)
+                AuthView()
                     .tabItem {
-                        Label("User", systemImage: "person")
-                        Text("User")
+                        Label("User", systemImage: "person.circle.fill")
                     }
+                    .tag(2)
             }
+            .navigationBarTitleDisplayMode(.large)
+            .toolbar {
+                // ... existing toolbar ...
+            }
+            .tint(.primary)
+            .animation(.easeInOut, value: selectedTab)
         }
-        .navigationTitle("LazyAI")
         .enableInjection()
     }
 
-    #if DEBUG
-    @ObserveInjection var forceRedraw
-    #endif
+
 }
 
 #Preview {

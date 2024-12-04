@@ -9,11 +9,15 @@ import SwiftUI
 
 @main
 struct LazyAIApp: App {
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-        }
-    }
+
+    @StateObject private var userViewModel = UserViewModel()
+
+	var body: some Scene {
+		WindowGroup {
+			ContentView()
+                .environmentObject(userViewModel)
+		}
+	}
 }
 
 #if canImport(HotSwiftUI)

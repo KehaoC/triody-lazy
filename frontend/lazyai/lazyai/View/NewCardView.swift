@@ -2,8 +2,10 @@ import SwiftUI
 
 struct NewCardView: View {
     @ObservedObject var taskViewModel: TaskViewModel
-    @State private var inputText = ""
-    @State private var isEditing = false
+    @State private var title: String = ""
+    @State private var description: String = ""
+    @State private var isEditingTitle = false
+    @State private var isEditingDescription = false
     @State private var showToast = false
     @State private var toastInfo: String = ""
     @State private var cardOpacity: Double = 1.0
@@ -22,21 +24,97 @@ struct NewCardView: View {
     #endif
 
     var card: some View {
-        VStack {
-            Spacer()
-            if isEditing {
-                TextEditor(text: $inputText)
-            } else {
-                Text(inputText.isEmpty ? "Got some problems today?" : inputText)
-                Text("Drag to the top to send to AI")
+        VStack(spacing: 20) {
+            Spacer().frame(height: 20)
+            
+            // Title Section
+            VStack(alignment: isEditingTitle ? .leading : .center, spacing: 8) {
+                Text("Title")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
+                    .padding(.horizontal)
+                
+                if isEditingTitle {
+                    TextField("Enter title", text: $title)
+                        .textFieldStyle(PlainTextFieldStyle())
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.1))
+                        )
+                        .padding(.horizontal)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                } else {
+                    Text(title.isEmpty ? "Got some problems today?" : title)
+                        .font(.system(size: 18, weight: .semibold))
+                        .padding(.horizontal)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3)) {
+                                isEditingTitle = true
+                            }
+                        }
+                }
             }
+            
+            // Description Section
+            VStack(alignment: isEditingDescription ? .leading : .center, spacing: 8) {
+                Text("Description")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
+                    .padding(.horizontal)
+                
+                if isEditingDescription {
+                    TextEditor(text: $description)
+                        .padding(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color.gray.opacity(0.1))
+                                )
+                        )
+                        .frame(height: 100)
+                        .padding(.horizontal)
+                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                } else {
+                    Text(description.isEmpty ? "Add some details..." : description)
+                        .font(.system(size: 16))
+                        .foregroundColor(description.isEmpty ? .gray : .primary)
+                        .padding(.horizontal)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3)) {
+                                isEditingDescription = true
+                            }
+                        }
+                }
+            }
+            
             Spacer()
-            controlBar
+            
+            // Drag Indicator
+            VStack(spacing: 6) {
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.6))
+                    .offset(y: offset.height / 10) // 添加拖拽反馈
+                
+                Text("Drag up to send")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.gray.opacity(0.8))
+            }
+            .padding(.bottom, 20)
         }
         .frame(width: 300, height: 400)
-        .background(.white)
-        .cornerRadius(20)
-        .shadow(radius: 10)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(.white)
+                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+        )
         .offset(x: offset.width, y: offset.height) // Apply the offset directly
         .opacity(cardOpacity)
         .gesture(
@@ -58,13 +136,17 @@ struct NewCardView: View {
                         // 2. 显示 Toast 提示
                         toastInfo = "Sent to Lazy, You just have to have a rest now."
                         showToast = true
-                        print("create task: \(inputText)")
-                        taskViewModel.createTask(title: inputText)
+                        print("create task: \(title)")
+                        Task {
+                            try await taskViewModel.createTask(title: title, description: description)
+                        }
 
                         // 3. 重置卡片状态并归位
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            inputText = ""
-                            isEditing = false
+                            title = ""
+                            description = ""
+                            isEditingTitle = false
+                            isEditingDescription = false
                             self.offset.height = 1000  // 先挪到下面去
 
                             // 4. 让卡片重新出现
@@ -89,9 +171,7 @@ struct NewCardView: View {
                 }
         )
         .onTapGesture {
-            withAnimation {
-                isEditing.toggle()
-            }
+            // Remove this since we now have separate tap gestures
         }
     }
 
@@ -102,21 +182,22 @@ struct NewCardView: View {
             .padding(.bottom, 20)
     }
 
-    func toastCard(with info: String)->some View {
+    func toastCard(with info: String) -> some View {
         Text(info)
             .font(.system(size: 16, weight: .medium))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.black.opacity(0.75))
-                    .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.85))
+                    .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 6)
             )
             .foregroundColor(.white)
             .opacity(showToast ? 1 : 0)
-            .animation(.spring(response: 0.6, dampingFraction: 0.7), value: showToast) // 增加 response 时间使动画变慢
-            .offset(y: showToast ? -150 : -200)
-            .blur(radius: showToast ? 0 : 2)
+            .scaleEffect(showToast ? 1 : 0.8)
+            .blur(radius: showToast ? 0 : 4)
+            .animation(.spring(response: 0.5, dampingFraction: 0.7), value: showToast)
+            .offset(y: showToast ? -180 : -220)
     }
 }
 
