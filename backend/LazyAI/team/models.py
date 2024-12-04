@@ -1,22 +1,24 @@
 from django.db import models
-
+import uuid
 # Create your models here.from django.db import models
 # 一切从简
 
 # User先用最简单的用户登陆逻辑，不用验证Token之类的
 class User(models.Model):
     # 识别码
-    user_id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # 主要信息
-    name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
-    password = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = '"auth"."users"'
+        managed = False
 
 class Task(models.Model):
     # 识别码
     task_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, to_field='id')
 
     # 主要信息
     title = models.CharField(max_length=100)

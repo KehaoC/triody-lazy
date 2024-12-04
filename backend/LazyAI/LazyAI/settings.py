@@ -81,17 +81,22 @@ WSGI_APPLICATION = 'LazyAI.wsgi.application'
 #     }
 # }
 
-# user=postgres.rwouxkvsjqcrnlfhplxq password=[YOUR-PASSWORD] host=aws-0-us-east-1.pooler.supabase.com port=6543 dbname=postgres
+
+# postgresql://postgres.eraslmtrxqzkjsdrsnjh:[YOUR-PASSWORD]@aws-0-us-west-1.pooler.supabase.com:6543/postgres
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
-        'USER': 'postgres.rwouxkvsjqcrnlfhplxq',
+        'USER': 'postgres.eraslmtrxqzkjsdrsnjh',
         'PASSWORD': 'Triody@Lazy',
-        'HOST': 'aws-0-us-east-1.pooler.supabase.com',
+        'HOST': 'aws-0-us-west-1.pooler.supabase.com',
         'PORT': '6543',
+        'OPTIONS': {
+            'options': '-c search_path=public, auth',
+        },
     }
 }
+
 import sys
 if 'test' in sys.argv:
     DATABASES = {
