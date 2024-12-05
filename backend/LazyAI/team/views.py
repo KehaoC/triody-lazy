@@ -34,7 +34,7 @@ def create_task(request):
     
     team = Team([], task)     
 
-    # 暂时直接开始运行任务 TODO: 需要优化
+    #TODO: 需要优化
     team.decompose_task()
     team.run()
 
@@ -182,7 +182,7 @@ def get_subtasks(request):
         {
             "subtask_id": subtask.subtask_id,
             "description": subtask.description,
-            "agent_name": subtask.agent_name,
+            "agent_type": subtask.agent_type,
             "is_lazied": subtask.is_lazied,
             "result": subtask.result,
         }
