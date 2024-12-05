@@ -34,7 +34,6 @@ class UserViewModel: ObservableObject {
         }
     }
     
-    // TODO: 注册的时候能直接拿到 token 吗
     func signUpWithEmail(email: String, password: String) async throws {
         isLoading = true 
         defer { isLoading = false }
@@ -53,7 +52,6 @@ class UserViewModel: ObservableObject {
         isAuthenticated = false
     }
 
-    // TODO: 丰富表单验证逻辑
     func isFormValid(email: String, password: String) -> Bool {
         guard email.isValidEmail() else {
             return false

@@ -148,7 +148,8 @@ struct NewCard: View {
                         showToast = true
                         print("create task: \(title)")
                         Task {
-                            try await taskManager.createTask(title: title, description: description)
+                            // 自动创建任务
+                            try await taskManager.createTaskAuto(title: title, description: description)
                         }
 
                         // 3. 重置卡片状态并归位

@@ -1,7 +1,7 @@
 import Foundation
 
-struct TaskToPreview: Identifiable {
-    let id: UUID
+struct TaskToPreview: Identifiable, Codable {
+    let id: Int
     let title: String
     let description: String
     let isFinished: Bool
@@ -9,9 +9,8 @@ struct TaskToPreview: Identifiable {
     let niumas: [NiumaToPreviewInTask]
 }
 
-
-
-struct TaskDetail {
+struct TaskDetail: Identifiable, Codable {
+	let id: Int
 	let title: String
 	let description: String
 	let summary: String
@@ -19,12 +18,10 @@ struct TaskDetail {
 	var isFinished: Bool
 	var allSubtasksFinished: Bool
 
-	let subtasksInTaskDetail: [SubtaskInTaskDetail]
-
+	let subtasksInTaskDetail: [SubtaskInTaskDetail]?
 }
 
-
-struct SubtaskInTaskDetail {
+struct SubtaskInTaskDetail: Identifiable, Codable {
 	let id: Int
 	let isFinished: Bool
 

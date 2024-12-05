@@ -1,8 +1,7 @@
 import Foundation
-import SwiftUI
 
 // 空闲的 niuma 列表
-struct NiumaHome {
+struct NiumaHome: Codable {
 	let niumas: [NiumaInHome]
 
 	var niumaCount: Int {
@@ -10,13 +9,13 @@ struct NiumaHome {
 	}
 }
 
-struct NiumaInHome {
+struct NiumaInHome: Codable, Identifiable {
 	let id: Int
 	let name: String
 	let agentType: String
 }
 
-struct NiumaDetail {
+struct NiumaDetail: Codable, Identifiable {
 	// 基本信息
 	let id: Int
 	let name: String
@@ -26,7 +25,7 @@ struct NiumaDetail {
 	let progress: Double
 
 	//  所属任务信息
-	let taskId: UUID?
+	let taskId: Int?
 	let taskTitle: String
 
 	//  目标任务信息
@@ -34,7 +33,7 @@ struct NiumaDetail {
 	let result: String
 }
 
-struct Niuma {
+struct Niuma: Codable, Identifiable {
 	// 完整的牛马数据
 	let id: Int
 	let name: String
@@ -42,11 +41,11 @@ struct Niuma {
 	
 	let progress: Double
 	
-	let taskId: UUID?
+	let taskId: Int?
 	let subtaskId: Int?
 }
 
-struct NiumaToPreviewInTask: Identifiable {
+struct NiumaToPreviewInTask: Identifiable, Codable {
 	let id: Int
 	let name: String
 	let agentType: String

@@ -18,7 +18,6 @@ struct ContentView: View {
                         Label("Board", systemImage: "desktopcomputer")
                     }
                     .tag(0)
-				// TODO 修改
                 NewCard()
                     .tabItem {
                         Label("New", systemImage: "plus.circle.fill")
