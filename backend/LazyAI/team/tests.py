@@ -3,7 +3,7 @@ from team.models import Task, Subtask, User
 from team.agents import Agent, Team
 from team.prompts import *
 from team.database import Database
-
+from core.utils import beautyprint
 class TestFullProcess(TestCase):
     def setUp(self):
         # Create mock users

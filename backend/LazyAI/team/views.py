@@ -1,200 +1,130 @@
 from django.shortcuts import render
-import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.db import transaction  # For atomic operations
+
 from team.agents import Team
 from team.models import Task, Subtask ,User # 导入模型
-from team.utils import api_error_handler, APIError, api_response, require_auth
-# Create your views here.
+from niuma.models import Niuma
+from core.utils import auth_and_error_handler, api_response, require_auth
 
-@csrf_exempt  # 禁用csrf保护
-@require_http_methods(["POST"])  # 明确只允许 POST 请求
-@api_error_handler
-@require_auth
-def create_task(request):
-    user_id = request.user_id
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        print("Invalid JSON format")
-        raise APIError("Invalid JSON format", status_code=400)
-        
-    task_description = data.get("description")
-    task_title = data.get("title")
+import json
 
-    print(f"Task title: {task_title}")
-    print(f"Task description: {task_description}")
+@auth_and_error_handler(methods=["GET"])
+def get_tasks_to_preview(request):
+    # 1. 获取所有任务
+    tasks = Task.objects.filter(user_id=request.user_id)
+    data = []
+    for task in tasks:
+        # 2. 获取任务的牛马
+        niumas = Niuma.objects.filter(task_id=task.task_id)
+        # 3. 只返回预览需要的字段
+        preview_data = {
+            'id': task.task_id,
+            'title': task.title,
+            'description': task.description,
+            'is_finished': task.is_finished,
+            'all_subtasks_lazied': task.all_subtasks_lazied,
+            'niumas': [niuma.to_dict() for niuma in niumas]
+        }
+        data.append(preview_data)
     
-    if not task_description:
-        raise APIError("Task description is required")
+    return api_response(data, "Tasks fetched successfully")
 
-    task = Task.objects.create(
-        title=task_title,
-        description=task_description,
-        user_id=user_id,
-    )
+@auth_and_error_handler(methods=["POST"])
+def get_task_detail(request):
+    # 1. 获取任务
+    task_id = request.POST.get("task_id")
+    task = Task.objects.filter(task_id=task_id, user_id=request.user_id).first()
+    if not task:
+        raise APIError("Task not found", status_code=404)
     
-    team = Team([], task)     
+    # 2. 获取任务的子任务
+    subtasks_in_task_detail = []
+    subtasks = Subtask.objects.filter(task_id=task_id)
 
-    # 暂时直接开始运行任务 TODO: 需要优化
-    # team.decompose_task()
-    # team.run()
+    for subtask in subtasks:
+        # 3. 获取牛马
+        niuma = Niuma.objects.filter(subtask_id=subtask.subtask_id).first()
+        subtask_in_task_detail = {
+            'id': subtask.subtask_id,
+            'is_finished': subtask.is_lazied,
 
-    response_data = {
-        "task_id": team.task_id,
-        "title": task.title,
-        "description": task.description,
-        "summary": None,
-        "is_finished": False,
-        "all_subtasks_lazied": False,
+            'description': subtask.description,
+            'result': subtask.result,
+
+            'assigned_niuma_name': niuma.niuma_name,
+            'progress': niuma.progress
+        }
+        subtasks_in_task_detail.append(subtask_in_task_detail)
+    
+    data = {
+        'id': task.task_id,
+        'title': task.title,
+        'description': task.description,
+        'summary': task.summary,
+
+        'is_finished': task.is_finished,
+        'all_subtasks_finished': task.all_subtasks_lazied,
+
+        'sub_tasks_in_task_detail': subtasks_in_task_detail
     }
-    
-    return api_response(response_data, "Task created successfully")
+    return api_response(data, "Task detail fetched successfully")
 
-@csrf_exempt
-@require_http_methods(["DELETE"])
-@api_error_handler
-@require_auth
+@auth_and_error_handler(methods=["POST"])
+def create_task(request):
+    # 1. 获取任务信息
+    title = request.POST.get("title")
+    description = request.POST.get("description")
+    auto: bool = request.POST.get("auto")
+
+    # 2. 创建任务
+    task = Task.objects.create(user_id=request.user_id, title=title, description=description, auto=auto)
+
+    # 3. 返回任务信息
+    data = {
+        'id': task.task_id,
+        'title': task.title,
+        'description': task.description,
+        'is_finished': task.is_finished,
+        'all_subtasks_lazied': task.all_subtasks_lazied,
+        'niumas': []  # 默认没有牛马
+    }
+
+    if auto:
+        # 4. TODO:  异步防止阻塞
+        team = Team(task)
+        team.decompose_task()  # 会在team类中存储
+        team.run()
+    else:
+        # TODO: 等待用户手动运行
+        team = Team(task)  # 只创建，不运行
+    return api_response(data, "Task created successfully")
+
+
+
+
+@auth_and_error_handler(methods=["DELETE"])
 def delete_task(request):
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        raise APIError("Invalid JSON format", status_code=400)
-        
-    task_id = data.get("task_id")
-
-    if not task_id:
-        raise APIError("Task ID is required")
-    
-    try:
-        task_id = int(task_id)
-    except ValueError:
-        raise APIError("Task ID must be an integer")
-    user_id = request.user_id
-    with transaction.atomic():
-        task = Task.objects.filter(task_id=task_id, user_id=user_id).first()
-        if not task:
-            raise APIError("Task not found", status_code=404)
-
-        Subtask.objects.filter(task_id=task_id).delete()
-        task.delete()
-
+    task_id = request.POST.get("task_id")
+    # TODO：这里需要再 save 来保留删除结果吗
+    Task.objects.filter(task_id=task_id, user_id=request.user_id).delete()
     return api_response(message="Task deleted successfully")
 
-@csrf_exempt
-@require_http_methods(["GET"])
-@api_error_handler
-@require_auth
-def get_tasks(request):
-    user_id = request.user_id
-    tasks = Task.objects.filter(user_id=user_id)
+@auth_and_error_handler(methods=["POST"])
+def signal_task_run(request):
+    task_id = request.POST.get("task_id")
+    team = Team.objects.filter(task_id=task_id).first()
+    if not team:
+        raise APIError("Team not found", status_code=404)
+    team.run()
+    # TODO: 修改调度器中的任务状态
+    return api_response(message="Task signaled to run successfully")
 
-    if not tasks.exists():
-        raise APIError("No tasks found for the given User ID", status_code=404)
-
-    tasks_data = [
-        {
-            "task_id": task.task_id,
-            "title": task.title,
-            "description": task.description,
-            "summary": task.summary,
-            "is_finished": task.is_finished,
-            "all_subtasks_lazied": task.all_subtasks_lazied
-        }
-        for task in tasks
-    ]
-
-    return api_response({"tasks": tasks_data}, "Tasks fetched successfully")
-
-@csrf_exempt
-@require_http_methods(["PUT"])
-@api_error_handler
-@require_auth
+@auth_and_error_handler(methods=["POST"])
 def modify_task_status(request):
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        raise APIError("Invalid JSON format", status_code=400)
-        
-    task_id = data.get("task_id")
-    is_finished = data.get("is_finished")
-    user_id = request.user_id
-
-    if task_id is None:
-        raise APIError("Task ID is required")
-        
-    if is_finished is None:
-        raise APIError("is_finished status is required")
-
-    try:
-        task_id = int(task_id)
-    except ValueError:
-        raise APIError("Task ID must be an integer")
-
-    # 验证任务是否属于当前用户并更新状态
-    task = Task.objects.filter(task_id=task_id, user_id=user_id).first()
-    if not task:
-        raise APIError("Task not found", status_code=404)
-
-    task.is_finished = is_finished
-    task.save()
-
-    return api_response(
-        data={
-            "task_id": task.task_id,
-            "is_finished": task.is_finished
-        },
-        message="Task status updated successfully"
-    )
-
-
-@csrf_exempt
-@require_http_methods(["POST"])
-@api_error_handler
-@require_auth
-def get_subtasks(request):
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        raise APIError("Invalid JSON format", status_code=400)
-        
-    task_id = data.get("task_id")
-    user_id = request.user_id
-
-    if task_id is None:
-        raise APIError("Task ID is required")
-
-    try:
-        task_id = int(task_id)
-    except ValueError:
-        raise APIError("Task ID must be an integer")
-
-    # 验证任务是否属于当前用户
-    task = Task.objects.filter(task_id=task_id, user_id=user_id).first()
-    if not task:
-        raise APIError("Task not found", status_code=404)
-
-    # 获取任务的所有子任务
-    subtasks = Subtask.objects.filter(task_id=task_id)
-    if not subtasks.exists():
-        raise APIError("No subtasks found for the given Task ID", status_code=404)
-
-    # 格式化子任务数据
-    subtasks_data = [
-        {
-            "subtask_id": subtask.subtask_id,
-            "description": subtask.description,
-            "agent_type": subtask.agent_type,
-            "is_lazied": subtask.is_lazied,
-            "result": subtask.result,
-        }
-        for subtask in subtasks
-    ]
-    print(subtasks_data)
-
-    return api_response(
-        data={"subtasks": subtasks_data},
-        message="Subtasks fetched successfully"
-    )
+    task_id = request.POST.get("task_id")
+    is_finished = request.POST.get("is_finished")
+    Task.objects.filter(task_id=task_id, user_id=request.user_id).update(is_finished=is_finished)
+    return api_response(message="Task status modified successfully")

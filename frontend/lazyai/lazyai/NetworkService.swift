@@ -24,13 +24,12 @@ class NetworkService{
 		return result ?? []
 	}
 	
-	// 获得任务详情
 	func getTaskDetail(taskId: Int) async throws -> TaskDetail? {
         // header: token
         // body: task_id
         // return: TaskDetail
         let endpoint = "team/get_task_detail"
-        let method = "GET"
+        let method = "POST"
         let body = ["task_id": taskId]
 
         let result: TaskDetail? = try await request(to: endpoint, with: method, loading: body)
@@ -39,7 +38,7 @@ class NetworkService{
 		return result ?? nil
 	}
 	
-    // 创建任务
+    // TODO: 创建任务, 自动或者手动逻辑继续实现
 	func createTask(title: String, description: String, auto: Bool) async throws -> TaskToPreview? {
         let endpoint = "team/create_task"
         let method = "POST"
@@ -50,7 +49,6 @@ class NetworkService{
 		return result ?? nil
 	}
 	
-	// 删除任务
 	func deleteTask(taskId: Int) async throws {
         let endpoint = "team/delete_task"
         let method = "POST"
@@ -60,7 +58,7 @@ class NetworkService{
 		print("deleteTask")
 	}
 
-    // 推送任务运行
+    // TODO: 推送任务运行
     func signalTaskRun(taskId: Int) async throws {
         let endpoint = "team/signal_task_run"
         let method = "POST"
@@ -70,7 +68,6 @@ class NetworkService{
 		print("signalTaskRun")
     }
 	
-	// 修改任务状态
 	func modifyTaskStatus(taskId: Int, isFinished: Bool) async throws {
         let endpoint = "team/modify_task_status"
         let method = "POST"
@@ -80,7 +77,6 @@ class NetworkService{
 		print("modifyTaskStatus")
 	}
 	
-	// 获得牛马数据
 	func getAllNiuma() async throws -> [Niuma]? {
         let endpoint = "niuma/get_all_niuma"
         let method = "GET"
@@ -90,7 +86,6 @@ class NetworkService{
 		return result ?? []
 	}
 
-    // 创建基础的牛马
     func createBasicNiuma() async throws -> [Niuma] {
         let endpoint = "niuma/create_basic_niuma"
         let method = "POST"
@@ -100,10 +95,10 @@ class NetworkService{
 		return result ?? []
     }
 
-	// 获得 niuma 详情
+    // TODO: 获得 niuma 详情
 	func getNiumaDetail(niumaId: Int) async throws -> NiumaDetail? {
         let endpoint = "niuma/get_niuma_detail"
-        let method = "GET"
+        let method = "POST"
         let body = ["niuma_id": niumaId]
 
         let result: NiumaDetail? = try await request(to: endpoint, with: method, loading: body)
