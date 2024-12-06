@@ -157,3 +157,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 SUPABASE_URL="https://eraslmtrxqzkjsdrsnjh.supabase.co"
 SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYXNsbXRyeHF6a2pzZHJzbmpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMzI3OTc2MiwiZXhwIjoyMDQ4ODU1NzYyfQ.jmYb6INqZ331sItH-89EWK3YAZ_OfTGKYedtygYTov4"
+
+
+# Celery配置
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Shanghai'  # 设置时区
