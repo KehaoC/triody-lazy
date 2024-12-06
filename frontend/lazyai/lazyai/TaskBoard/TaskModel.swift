@@ -3,31 +3,32 @@ import Foundation
 struct TaskToPreview: Identifiable, Codable {
     let id: Int
     let title: String
-    let description: String
-    let isFinished: Bool
-    let allSubtasksLazied: Bool
+    var description: String?
+    var isFinished: Bool
+    var allSubtasksLazied: Bool
     let niumas: [NiumaToPreviewInTask]
 }
 
 struct TaskDetail: Identifiable, Codable {
 	let id: Int
 	let title: String
-	let description: String
-	let summary: String
+	let description: String?
+	let summary: String?
 
 	var isFinished: Bool
 	var allSubtasksFinished: Bool
 
-	let subtasksInTaskDetail: [SubtaskInTaskDetail]?
+	let subtasks: [SubtaskInTaskDetail]?
 }
 
-struct SubtaskInTaskDetail: Identifiable, Codable {
-	let id: Int
-	let isFinished: Bool
 
-	let description: String
-	let result: String
+	struct SubtaskInTaskDetail: Identifiable, Codable {
+		let id: Int
+		let isFinished: Bool
 
-	let assignedNiumaName: String
-	let progress: Double
+		let description: String?
+		let result: String?
+
+		let assignedNiumaName: String?
+		let progress: Double
 }

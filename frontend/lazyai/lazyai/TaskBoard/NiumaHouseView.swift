@@ -27,78 +27,69 @@ struct NiumaHouseView: View {
 			}
 		}
 		.padding()
+	}
+}
+
+struct LazyNiuma: View {
+	// LazyNiuma 是在牛马屋中休息的牛马，没有任何事情做
+	let niuma: NiumaInHome
+	@State private var showNiumaDetail: Bool = false
+
+	init(niuma: NiumaInHome) {
+		self.niuma = niuma
+	}
+
+	var body: some View {
+		HStack {
+			niumaName
+			niumaAvatar
+		}
+		.padding()
+		.background(
+			RoundedRectangle(cornerRadius: 12)
+				.fill(
+					LinearGradient(
+						colors: [Color.blue.opacity(0.2), Color.indigo.opacity(0.2)],
+						startPoint: .topLeading,
+						endPoint: .bottomTrailing
+					)
+				)
+		)
+		.overlay(
+			RoundedRectangle(cornerRadius: 12)
+				.stroke(Color.gray.opacity(0.5), lineWidth: 2)
+		)
+		.clipShape(RoundedRectangle(cornerRadius: 12))
+		.shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
+		.onTapGesture {
+			// 点击后显示牛马的详细信息
+			showNiumaDetail = true
+		}
+		.popover(isPresented: $showNiumaDetail) {
+			LazyNiumaDetail(niuma: niuma)
+		}
 		.enableInjection()
 	}
 
-	#if DEBUG
-	@ObserveInjection var forceRedraw
-	#endif
+	var niumaName: some View {
+		Text(niuma.name)
+			.font(.system(size: 16, weight: .bold, design: .monospaced))
+	}
 
-	struct LazyNiuma: View {
-		// LazyNiuma 是在牛马屋中休息的牛马，没有任何事情做
-		let niuma: NiumaInHome
-		@State private var showNiumaDetail: Bool = false
-
-		init(niuma: NiumaInHome) {
-			self.niuma = niuma
-		}
-
-		var body: some View {
-			HStack {
-				niumaName
-				niumaAvatar
-			}
-			.padding()
-			.background(
-				RoundedRectangle(cornerRadius: 12)
-					.fill(
-						LinearGradient(
-							colors: [Color.blue.opacity(0.2), Color.indigo.opacity(0.2)],
-							startPoint: .topLeading,
-							endPoint: .bottomTrailing
-						)
-					)
-			)
-			.overlay(
-				RoundedRectangle(cornerRadius: 12)
-					.stroke(Color.gray.opacity(0.5), lineWidth: 2)
-			)
-			.clipShape(RoundedRectangle(cornerRadius: 12))
-			.shadow(color: .gray.opacity(0.2), radius: 5, x: 0, y: 2)
-			.onTapGesture {
-				// 点击后显示牛马的详细信息
-				showNiumaDetail = true
-			}
-			.popover(isPresented: $showNiumaDetail) {
-				LazyNiumaDetail(niuma: niuma)
-			}
-		    .enableInjection()
-		}
-
-		#if DEBUG
-		@ObserveInjection var forceRedraw
-		#endif
-
-		var niumaName: some View {
-			Text(niuma.name)
-				.font(.system(size: 16, weight: .bold, design: .monospaced))
-		}
-
-		var niumaAvatar: some View {
-			// 根据牛马的名字显示不同的头像
-			if niuma.name == "coder" {
-				Image(systemName: "laptopcomputer")
-					.foregroundStyle(.secondary)
-			} else if niuma.name == "searcher" {
-				Image(systemName: "magnifyingglass")
-					.foregroundStyle(.secondary)
-			} else if niuma.name == "writer" {
-				Image(systemName: "pencil")
-					.foregroundStyle(.secondary)
-			} else {
-				Image(systemName: "person.fill")
-					.foregroundStyle(.secondary)
-			}
+	var niumaAvatar: some View {
+		// 根据牛马的名字显示不同的头像
+		if niuma.name == "coder" {
+			Image(systemName: "laptopcomputer")
+				.foregroundStyle(.secondary)
+		} else if niuma.name == "searcher" {
+			Image(systemName: "magnifyingglass")
+				.foregroundStyle(.secondary)
+		} else if niuma.name == "writer" {
+			Image(systemName: "pencil")
+				.foregroundStyle(.secondary)
+		} else {
+			Image(systemName: "person.fill")
+				.foregroundStyle(.secondary)
 		}
 	}
 }
@@ -132,11 +123,6 @@ struct LazyNiumaDetail: View {
 			Text(niuma.name)
 		}
 		.padding()
-	    .enableInjection()
 	}
-
-	#if DEBUG
-	@ObserveInjection var forceRedraw
-	#endif
 }
 

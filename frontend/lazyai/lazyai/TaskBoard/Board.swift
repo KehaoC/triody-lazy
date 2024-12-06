@@ -19,9 +19,9 @@ struct Board: View {
     var taskList: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
-                ForEach(taskManager.getTasksToPreview) { task in
+                ForEach(taskManager.taskList) { task in
                     // 主页上的任务卡, 不显示任务详情
-                    TaskCard(task: task, taskDetailId: nil)
+                    TaskCard(task: task)
                 }
             }
         }

@@ -63,7 +63,12 @@ struct SignInView: View {
                 showAlert = false
             }
         }
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 
     var inputForm: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -192,7 +197,12 @@ struct SignUpView: View {
                 .fontWeight(.bold)
             }
         }
+        .enableInjection()
     }
+
+    #if DEBUG
+    @ObserveInjection var forceRedraw
+    #endif
 
 }
 

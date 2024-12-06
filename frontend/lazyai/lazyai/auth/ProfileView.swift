@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ProfileView: View {
 	@EnvironmentObject var userViewModel: UserViewModel
+	@EnvironmentObject var niumaManager: NiumaManager
 	@State private var showSignOutAlert = false
 	
 	var body: some View {
@@ -52,7 +53,26 @@ struct ProfileView: View {
 			} message: {
 				Text("Are you sure you want to sign out?")
 			}
+
+			getMyNiumaButton
 		}
 		.padding(.vertical, 32)
+	    .enableInjection()
 	}
+
+	var getMyNiumaButton: some View {
+		Button(action: {
+			Task {
+				try await niumaManager.getInitialNiumas()
+			}
+		}) {
+			Text("Get My Niuma")
+		}
+		.disabled(niumaManager.niumas.count > 0)
+	}
+
+
+	#if DEBUG
+	@ObserveInjection var forceRedraw
+	#endif
 }

@@ -21,4 +21,5 @@ from team.views import create_task
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('team/', include('team.urls')),
+    path('niuma/', include('niuma.urls')),
 ]

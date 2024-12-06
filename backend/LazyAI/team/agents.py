@@ -3,7 +3,8 @@ from core.utils import beautyprint
 from typing import List
 from zhipuai import ZhipuAI
 from groq import Groq
-from team.models import Task, Subtask
+from team.models import Task, Subtask 
+from niuma.models import Niuma
 from django.db import transaction  # For atomic operations
 import json
 from openai import OpenAI
@@ -128,105 +129,161 @@ def leader_chat(system_prompt, user_prompt):
 def coder_chat(system_prompt, user_prompt):
     return get_response(system_prompt, user_prompt, client="Coder-32B-Instruct")
 
-# 函数映射字典
+# 函数映射字典 - 确保键名与 agent_type 完全匹配
 functions = {
-    "Leader": leader_chat,
-    "Outline_Writer": outline_writer_chat,
-    "Searcher": searcher_chat,
-    "Coder": coder_chat,
+    "leader": leader_chat,
+    "searcher": searcher_chat,
+    "outline_writer": outline_writer_chat,
+    "coder": coder_chat,
 }
 
 class Agent:
     def __init__(self, name, system_prompt):
-        self.name = name
+        self.name = name.lower()  # 转换为小写
         self.system_prompt = system_prompt
-        self.chat_function = functions.get(name, get_response)  # 默认使用基础的 get_response
+        self.chat_function = functions.get(self.name, get_response)  # 使用小写名称查找
 
     def chat(self, user_prompt):
         return self.chat_function(self.system_prompt, user_prompt)
+# 默认执行器列表 - 使用小写的 agent_type
 
 default_executors = [
-    Agent("Outline_Writer", outline_writer_system_prompt),
-    Agent("Searcher", searcher_system_prompt),
-    Agent("Coder", coder_system_prompt),
+    Agent("outline_writer", outline_writer_system_prompt),
+    Agent("searcher", searcher_system_prompt),
+    Agent("coder", coder_system_prompt),
 ]
 
-
 class Team:
-    def __init__(self, executors, task):
-        # Leader和Distributer是Team的固定Agent
-        self.leader = Agent("Leader", leader_system_prompt)  
-        # leader 了解系统能力的边界，知道什么能做好，什么做不了
-        # Leader 对 task 进行解读，找到对应的 Agents 去解决特定问题
-        # 输出[(subtask_description, agent_type), ...]
-        # TODO： 如果Leader 可以清晰定义无法解决的任务的集合，则也可以展现给用户
+    def __init__(self, executors = None, task = None):
+        self.leader = Agent("leader", leader_system_prompt)  
 
         # 可变Agent
-        executors = executors if executors else default_executors  # 如果传入为空那就默认，避免在 view 中定义
-        self.executors = {executor.name: executor for executor in executors}
-        self.task_description = task.description
+        executors = executors if executors else default_executors
+        self.executors = {executor.name.lower(): executor for executor in executors}  # 转换为小写
+        self.task_title = task.title if task.title else ""
+        self.task_description = task.description if task.description else ""
         self.subtasks = []
         self.task = task
-        self.task_id = task.task_id  # Save the generated task_id for reference
-        task.save()  # Save the task to the database
+        self.task_id = task.task_id if task else None
+        if task:
+            task.save()  # Save the task to the database
+
+        print("Task initialized.")
     
     def decompose_task(self):
-        # TODO 修改prompt, 输出为[(subtask_description, agent_type), ...] agent 为空则为无法处理
+        print(f"Starting task decomposition for task: {self.task_title}")
+        print(f"Task description: {self.task_description}")
+            
+        try:
+            print("Sending request to leader agent...")
+            leader_response = self.leader.chat(self.task_title + "\n" + self.task_description)
+            print(f"Raw leader response: {leader_response}")
+            
+            subtask_dict = json.loads(leader_response)
+            print(f"Parsed subtasks: {json.dumps(subtask_dict, indent=2)}")
+        except json.JSONDecodeError as e:
+            print(f"Error parsing leader response: {e}")
+            print(f"Invalid JSON response: {leader_response}")
+            return
+        except Exception as e:
+            print(f"Error decomposing task: {e}")
+            return
         
-        # 将任务分解为多个子任务
-        leader_response = self.leader.chat(self.task_description)
-        print(leader_response)
-
-        subtask_dict = json.loads(leader_response) # 将json字符串转换为dict
-        
+        print("Starting transaction for subtask creation...")
         with transaction.atomic():
             for subtask_content in subtask_dict:
-                # 创建或获取 Subtask 模型实例
-                db_subtask, created = Subtask.objects.get_or_create(
-                    task_id=self.task.task_id,  # 将任务正确链接
-                    description=subtask_content['subtask_description'],
-                    agent_type=subtask_content['agent_type'],
-                    defaults={
-                        'result': "",  # 初始结果为空
-                        'is_lazied': False  # 标记为未处理
-                    }
-                )
-                # 添加到 subtasks 列表中
-                self.subtasks.append(db_subtask)
-        
+                print(f"\nProcessing subtask: {subtask_content}")
+                try:
+                    db_subtask, created = Subtask.objects.get_or_create(
+                        task_id=self.task.task_id,
+                        description=subtask_content['subtask_description'],
+                        agent_type=subtask_content['agent_type'],
+                        defaults={
+                            'result': "",
+                            'is_lazied': False
+                        }
+                    )
+                    print(f"Subtask {'created' if created else 'retrieved'} with ID: {db_subtask.subtask_id}")
+
+                    # 为子任务分配空闲且类型匹配的niuma
+                    available_niuma = Niuma.objects.filter(
+                        task_id__isnull=True,
+                        agent_type=subtask_content['agent_type']
+                    ).first()
+
+                    if available_niuma:
+                        available_niuma.task_id = self.task.task_id
+                        available_niuma.subtask_id = db_subtask.subtask_id
+                        available_niuma.save()
+                        print(f"Assigned niuma {available_niuma.niuma_id} to subtask {db_subtask.subtask_id}")
+                    else:
+                        print(f"No available niuma found for agent type: {subtask_content['agent_type']}")
+
+                    # 添加到 subtasks 列表中
+                    self.subtasks.append(db_subtask)
+                    print(f"Added subtask to internal list. Current count: {len(self.subtasks)}")
+
+                except Exception as e:
+                    print(f"Error creating or getting subtask: {e}")
+                    print(f"Subtask content that caused error: {subtask_content}")
+
+        print(f"Decomposition completed. Total subtasks created: {len(self.subtasks)}")
+
     def run(self):
+        print("\n=== Starting LazyTeam run() ===")
         if not self.task_id:
             print("Task ID is required to save results to the database.")
             return
         
+        print(f"Processing {len(self.subtasks)} subtasks...")
+        
         # Execute tasks and store results
-        for subtask in self.subtasks:
-            # Use the subtask instance fields directly
-            executor = self.executors.get(subtask.agent_type, None)
-            if executor:
-                subtask.result = executor.chat(subtask.description)
-                print(subtask.result)
-            else:
-                subtask.result = "Sorry, I don't know how to do this."
-            # Mark the subtask as lazied
-            subtask.is_lazied = True
+        try:
+            for index, subtask in enumerate(self.subtasks, 1):
+                print(f"\nProcessing subtask {index}/{len(self.subtasks)}")
+                print(f"Subtask type: {subtask.agent_type}")
+                print(f"Subtask description: {subtask.description}")
+                
+                # Use the subtask instance fields directly
+                executor = self.executors.get(subtask.agent_type, None)
+                if executor:
+                    print(f"Found executor for {subtask.agent_type}, executing...")
+                    subtask.result = executor.chat(subtask.description)
+                    print(f"Execution result: {subtask.result}")
+                else:
+                    print(f"No executor found for agent type: {subtask.agent_type}")
+                    subtask.result = "Sorry, I don't know how to do this."
+                    # Mark the subtask as lazied
+                    subtask.is_lazied = True
+                    print("Marked subtask as lazied")
+        except Exception as e:
+            print(f"Error running subtasks: {e}")
+            print(f"Error details: {str(e)}")
             
-        self.print_subtasks_as_json(self.subtasks)
+        print("\nUpdating database with results...")
         
         # Update database with results
         with transaction.atomic():
+            print("Started database transaction")
+            
             # 一定要有这个save()才会更新到远端数据库
-            for subtask in self.subtasks:
+            for index, subtask in enumerate(self.subtasks, 1):
+                print(f"Saving subtask {index}/{len(self.subtasks)}")
                 subtask.save()
+                print(f"Subtask {subtask.subtask_id} saved successfully")
 
             # Check if all subtasks are lazied
             all_subtasks_lazied = all(subtask.is_lazied for subtask in self.subtasks)
+            print(f"All subtasks lazied status: {all_subtasks_lazied}")
 
             # Update the parent task's status
+            print(f"Updating parent task {self.task.task_id}")
             self.task.is_finished = True
             self.task.all_subtasks_lazied = all_subtasks_lazied
             self.task.save()
-    
+            print("Parent task updated successfully")
+            
+        print("=== LazyTeam run() completed ===\n")
     def print_result(self):
         beautyprint(self.subtasks)
 

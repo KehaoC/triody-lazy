@@ -1,50 +1,121 @@
 import SwiftUI
 
 class TaskManager: ObservableObject {
-    @Published private var taskList: [TaskToPreview] = []
-    @Published private var taskDetail: [TaskDetail] = []
+    @Published var taskList: [TaskToPreview] = []
+    @Published var taskDetail: [TaskDetail] = []
+    @Published var taskDetailId: Int?
+    @Published var isLoading: Bool = true
 
     init() {
         Task {
-            // 初始化获取任务列表
-            taskList = try await NetworkService.shared.getTasksToPreview()
+            await loadInitialData()
         }
     }
-	
-	var getTasksToPreview: [TaskToPreview] {
-		taskList
-	}
+
+    private func loadInitialData() async {
+        await MainActor.run {
+            isLoading = true
+        }
+        do {
+            async let tasks = NetworkService.shared.getTasksToPreview()
+            async let taskDetails = NetworkService.shared.getAllTaskDetails()
+            
+            let taskResults = try await tasks
+            let taskDetailResults = try await taskDetails
+            
+            await MainActor.run {
+                print("Update tasks")
+                self.taskList = taskResults
+                self.taskDetail = taskDetailResults
+                self.isLoading = false
+            }
+        } catch {
+            print("Failed to load initial data: \(error)")
+            await MainActor.run {
+                self.isLoading = false
+            }
+        }
+    }
 
     func modifyTaskStatus(taskId: Int, isFinished: Bool) async throws {
+        await MainActor.run {
+            withAnimation {
+                if let index = taskList.firstIndex(where: { $0.id == taskId }) {
+                    taskList[index].isFinished = isFinished
+                }
+            }
+        }
+        
         do {
             try await NetworkService.shared.modifyTaskStatus(taskId: taskId, isFinished: isFinished)
         } catch {
+            await MainActor.run {
+                withAnimation {
+                    if let index = taskList.firstIndex(where: { $0.id == taskId }) {
+                        taskList[index].isFinished = !isFinished
+                    }
+                }
+            }
             print("modifyTaskStatus error: \(error)")
+            throw error
         }
     }
 
     func deleteTask(taskId: Int) async throws {
+        let deletedTask = taskList.first { $0.id == taskId }
+        await MainActor.run {
+            withAnimation {
+                taskList.removeAll { $0.id == taskId }
+            }
+        }
+        
         do {
             try await NetworkService.shared.deleteTask(taskId: taskId)
         } catch {
+            if let task = deletedTask {
+                await MainActor.run {
+                    withAnimation {
+                        taskList.append(task)
+                    }
+                }
+            }
             print("deleteTask error: \(error)")
+            throw error
         }
     }
 
     func createTaskAuto(title: String, description: String) async throws -> Bool {
-        // 自动创建任务, 自动分配牛马
+        let tempTask = TaskToPreview(id: -1, title: title, description: description, isFinished: false, allSubtasksLazied: false, niumas: [])
+        
+        await MainActor.run {
+            withAnimation {
+                taskList.append(tempTask)
+            }
+        }
+        
         do {
             let newTask = try await NetworkService.shared.createTask(title: title, description: description, auto: true)
-            taskList.append(newTask!)
+            
+            await MainActor.run {
+                withAnimation {
+                    if let index = taskList.firstIndex(where: { $0.id == -1 }) {
+                        taskList[index] = newTask!
+                    }
+                }
+            }
             return true
         } catch {
+            await MainActor.run {
+                withAnimation {
+                    taskList.removeAll { $0.id == -1 }
+                }
+            }
             print("createTask error: \(error)")
             return false
         }
     }
 
     func createTaskManual(title: String, description: String) async throws -> Bool {
-        // 手动创建任务, 不分配牛马
         do {
             let newTask = try await NetworkService.shared.createTask(title: title, description: description, auto: false)
             taskList.append(newTask!)
@@ -56,32 +127,26 @@ class TaskManager: ObservableObject {
     }
 
     func getTaskList() async throws -> Bool {
-        // 获得在主页可以显示的任务列表
-        // 也可以用于刷新
         do {
-            // 获取成功
             taskList = try await NetworkService.shared.getTasksToPreview()
             return true
         } catch {
-            // 获取失败
             print("getTaskList error: \(error)")
             return false
         }
     }
 
-    func getTaskDetail(taskId: Int) async throws -> Int? {
-        // 获取任务的详细信息
+    func getTaskDetail(taskId: Int) async throws {
         if taskDetail.contains(where: { $0.id == taskId }) {
-            return taskId
+            return
         }
 
         do {
             let newTaskDetail = try await NetworkService.shared.getTaskDetail(taskId: taskId)
             taskDetail.append(newTaskDetail!)
-            return taskId
+            taskDetailId = taskId
         } catch {
             print("getTaskDetail error: \(error)")
-            return nil
         }
     }
 
@@ -90,8 +155,6 @@ class TaskManager: ObservableObject {
     }
 
     func pushTaskRun(taskId: Int) async throws -> Bool {
-        // 推送任务运行
-        // 确保任务已经分配了牛马
         do {
             try await NetworkService.shared.signalTaskRun(taskId: taskId)
             return true

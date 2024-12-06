@@ -1,7 +1,7 @@
 # 修改 prompts 信息
-agent_1_info = "Searcher: search information from the internet"
-agent_2_info = "Outline_Writer: write outline for an article"
-agent_3_info = "Coder:  responsible only for writing code and comments, or providing code explanations and error checks, but does not provide functions like compilation."
+agent_1_info = "searcher: search information from the internet"
+agent_2_info = "outline_writer: write outline for an article"
+agent_3_info = "coder:  responsible only for writing code and comments, or providing code explanations and error checks, but does not provide functions like compilation."
 
 
 agents_info = f"""
@@ -28,15 +28,15 @@ Output format:
 [
     {{
         "subtask_description": "根据用户提供的主题进行研究，并确定博客的主要内容方向。",
-        "agent_name": "Searcher"
+        "agent_type": "searcher"
     }},
     {{
         "subtask_description": "根据研究结果撰写一篇结构清晰、内容完整的博客文章。",
-        "agent_name": "Writer"
+        "agent_type": "outline_writer"
     }},
     {{
-        "subtask_description": "对博客内容进行格式优化，包括调整段落、添加标题和列表，确保最终排版美观易读。",
-        "agent_name": ""
+        "subtask_description": "撰写相关的代码框架，使用简洁的 python 语言",
+        "agent_type": "coder"
     }}
 ]
 

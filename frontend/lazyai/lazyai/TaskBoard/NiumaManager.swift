@@ -2,17 +2,43 @@ import SwiftUI
 
 class NiumaManager: ObservableObject {
 	@Published var niumas: [Niuma] = []
+	@Published var niumaDetails: [NiumaDetail] = []
+	@Published var isLoading: Bool = true
 
     init() {
         Task {
-            // 初始化获取所有的牛马
-            guard let niumas = try await NetworkService.shared.getAllNiuma() else {
-                return
-            }
-            self.niumas = niumas
+            await loadInitialData()
         }
     }
-    var niumasInHome: [NiumaInHome] {
+    
+    private func loadInitialData() async {
+        await MainActor.run {
+            isLoading = true
+        }
+        
+        do {
+            async let niumasList = NetworkService.shared.getAllNiuma()
+            // async let detailsList = NetworkService.shared.getAllNiumaDetails()
+            
+            let niumas = try await niumasList
+            // let details = try await detailsList
+            
+            await MainActor.run {
+                if let niumas = niumas {
+                    self.niumas = niumas
+                }
+                // self.niumaDetails = details
+                self.isLoading = false
+            }
+        } catch {
+            print("Failed to load initial niuma data: \(error)")
+            await MainActor.run {
+                self.isLoading = false
+            }
+        }
+    }
+
+	var niumasInHome: [NiumaInHome] {
         niumas.filter { $0.taskId == nil }.compactMap { niuma in
             NiumaInHome(id: niuma.id, name: niuma.name, agentType: niuma.agentType)
         }

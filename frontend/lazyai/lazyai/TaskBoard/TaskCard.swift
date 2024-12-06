@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct TaskCard: View {
+    // TODO: 现在一点击就会崩溃，需要排查
     let task: TaskToPreview
-    let taskDetailId: Int?
 
     // 用于获取新任务
     @EnvironmentObject var taskManager: TaskManager
@@ -24,16 +24,23 @@ struct TaskCard: View {
                     }
 
                     // 任务描述
-                    if !task.description.isEmpty {
+                    if let description = task.description, !description.isEmpty {
                         taskDescription
                     }
 
                     // 任务进度
                     HStack {
                         // 处于该任务中的牛马们, 这里是简略形式
-                        ForEach(niumaManager.filterNiumasInTask(with: task.id), id: \.id) { niuma in
-                            // 点击后显示牛马的详细信息
-                            NiumaInTaskCard(niuma: niuma)
+                        let niumasInTask = niumaManager.filterNiumasInTask(with: task.id)
+                        if niumasInTask.isEmpty {
+                            Text("No niuma, assign one")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            ForEach(niumasInTask, id: \.id) { niuma in
+                                // 点击后显示牛马的详细信息
+                                NiumaInTaskCard(niuma: niuma)
+                            }
                         }
                     }
                     niumaDropArea
@@ -56,15 +63,13 @@ struct TaskCard: View {
                 .onTapGesture {
                     // 点击显示详细任务卡
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        Task {
-                            try await taskManager.getTaskDetail(taskId: task.id)
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            showDetailCard.toggle()
                         }
-                        showDetailCard.toggle()
                     }
                 }
             } else {
-                // 详细任务卡
-                DetailCard(task: taskManager.taskDetailWith(taskId: taskDetailId)!, isShowing: $showDetailCard)
+                DetailCard(task: taskManager.taskDetail.first(where: { $0.id == task.id })!, isShowing: $showDetailCard)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.9).combined(with: .opacity),
                         removal: .scale(scale: 0.9).combined(with: .opacity)
@@ -143,7 +148,7 @@ struct TaskCard: View {
     }
 
     var taskDescription: some View {
-        Text(task.description)
+        Text(task.description ?? "")
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .lineLimit(2)
@@ -186,14 +191,14 @@ struct DetailCard: View {
             }
             
             // Task Description
-            if !task.description.isEmpty {
-                Text(task.description)
+            if let description = task.description {
+                Text(description)
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
             
             // TODO: 什么时候获取详细的子任务信息？
-            if let subtasks = task.subtasksInTaskDetail, !subtasks.isEmpty {
+            if let subtasks = task.subtasks, !subtasks.isEmpty {
                 Divider()
                 
                 Text("Subtasks")
@@ -201,10 +206,10 @@ struct DetailCard: View {
                     .padding(.bottom, 4)
                 
                 VStack(spacing: 8) {
-                    if let subtasks = task.subtasksInTaskDetail {
+                    if let subtasks = task.subtasks {
                         ForEach(subtasks, id: \.id) { subtask in
                             // 子任务描述，子任务进度，子任务分配的牛马
-                            Text(subtask.description)
+                            Text(subtask.description ?? "")
                         }
                     }
                 }
