@@ -158,7 +158,7 @@ class Team:
         self.leader = Agent("Leader", leader_system_prompt)  
         # leader 了解系统能力的边界，知道什么能做好，什么做不了
         # Leader 对 task 进行解读，找到对应的 Agents 去解决特定问题
-        # 输出[(subtask_description, agent_name), ...]
+        # 输出[(subtask_description, agent_type), ...]
         # TODO： 如果Leader 可以清晰定义无法解决的任务的集合，则也可以展现给用户
 
         # 可变Agent
@@ -171,7 +171,7 @@ class Team:
         task.save()  # Save the task to the database
     
     def decompose_task(self):
-        # TODO 修改prompt, 输出为[(subtask_description, agent_name), ...] agent 为空则为无法处理
+        # TODO 修改prompt, 输出为[(subtask_description, agent_type), ...] agent 为空则为无法处理
         
         # 将任务分解为多个子任务
         leader_response = self.leader.chat(self.task_description)
@@ -185,7 +185,7 @@ class Team:
                 db_subtask, created = Subtask.objects.get_or_create(
                     task_id=self.task.task_id,  # 将任务正确链接
                     description=subtask_content['subtask_description'],
-                    agent_name=subtask_content['agent_name'],
+                    agent_type=subtask_content['agent_type'],
                     defaults={
                         'result': "",  # 初始结果为空
                         'is_lazied': False  # 标记为未处理
@@ -202,7 +202,7 @@ class Team:
         # Execute tasks and store results
         for subtask in self.subtasks:
             # Use the subtask instance fields directly
-            executor = self.executors.get(subtask.agent_name, None)
+            executor = self.executors.get(subtask.agent_type, None)
             if executor:
                 subtask.result = executor.chat(subtask.description)
                 print(subtask.result)
@@ -232,7 +232,7 @@ class Team:
 
     def print_subtasks_as_json(self,subtasks):
         """
-        将子任务列表打印为 JSON 格式，仅包含 description, agent_name, result 字段。
+        将子任务列表打印为 JSON 格式，仅包含 description, agent_type, result 字段。
     
         :param subtasks: 子任务实例列表
         """
@@ -240,7 +240,7 @@ class Team:
         subtasks_json = [
             {
                 "description": subtask.description,
-                "agent_name": subtask.agent_name,
+                "agent_type": subtask.agent_type,
                 "result": subtask.result
             }
             for subtask in subtasks

@@ -35,8 +35,9 @@ class Subtask(models.Model):
 
     # 主要信息
     description = models.TextField()
-    agent_name = models.CharField(max_length=100)
+    agent_type = models.CharField(max_length=100)
     is_lazied = models.BooleanField(default=False)  # 是否经过LazyTeam的多 Agent 框架处理过
 
     # 执行结果
     result = models.TextField()
+    
