@@ -4,15 +4,20 @@ struct AuthView: View {
     @EnvironmentObject private var userViewModel: UserViewModel
     @State private var showSignUp = false
 
+    // TODO: 测试用，避免反复测试输入，麻烦
+    @State private var inputEmail: String = "caikehao@triody.tech"
+    @State private var inputPassword: String = "Ckh@0725"
+
+
     var body: some View {
         if userViewModel.isAuthenticated {
             ProfileView()
                 .transition(.move(edge: .bottom))
         } else {
             if showSignUp {
-                SignUpView(showSignUp: $showSignUp)
+                SignUpView(showSignUp: $showSignUp, inputEmail: $inputEmail, inputPassword: $inputPassword)
             } else {
-                SignInView(showSignUp: $showSignUp)
+                SignInView(showSignUp: $showSignUp, inputEmail: $inputEmail, inputPassword: $inputPassword)
             }
         }
     }
@@ -23,8 +28,14 @@ struct AuthView: View {
 }
 
 struct SignInView: View {
-    @Binding var showSignUp: Bool
     @EnvironmentObject var userViewModel: UserViewModel
+
+    @Binding var showSignUp: Bool
+    @Binding var inputEmail: String
+    @Binding var inputPassword: String
+
+    @State private var showAlert: Bool = false
+    @State private var alertMessage: String = "some test message."
 
     var body: some View {
         VStack(spacing: 32) {
@@ -40,56 +51,71 @@ struct SignInView: View {
                     .font(.subheadline)
                     .foregroundColor(.gray)
             }
+
             Divider()
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("E-Mail Address")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                TextField("Enter your email...", text: $userViewModel.email)
-                    .textFieldStyle(CustomTextFieldStyle())
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                Text("Password")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                SecureField("6 bits or more", text: $userViewModel.password)
-                    .textFieldStyle(CustomTextFieldStyle())
+            inputForm
+            signInButton
+            signUpTip
+        }
+        .alert(alertMessage, isPresented: $showAlert) {
+            Button("OK", role: .cancel) { 
+                showAlert = false
             }
-            .padding(.horizontal, 32)
-            
-            if !userViewModel.errorMessage.isEmpty {
-                Text(userViewModel.errorMessage)
-                    .foregroundColor(.red)
-                    .font(.caption)
-            }
+        }
+    }
 
-            Button(action: {
-                Task {
-                    try await userViewModel.signInWithEmail()
-                }
-            }) {
-                if userViewModel.isLoading {
-                    ProgressView()
-                        .tint(.white)
-                } else {
-                    Text("Sign in")
+    var inputForm: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("E-Mail Address")
+                .font(.subheadline)
+                .fontWeight(.bold)
+            TextField("Enter your email...", text: $inputEmail)
+                .textFieldStyle(CustomTextFieldStyle())
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+            Text("Password")
+                .font(.subheadline)
+                .fontWeight(.bold)
+            SecureField("6 bits or more", text: $inputPassword)
+                .textFieldStyle(CustomTextFieldStyle())
+        }
+        .padding(.horizontal, 32)
+    }
+
+    var signInButton: some View {
+        Button(action: {
+            Task {
+                do {
+                    try await userViewModel.signInWithEmail(email: inputEmail, password: inputPassword)
+                } catch {
+                    alertMessage = "Please check your email and password and try again."
+                    showAlert = true
                 }
             }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(userViewModel.isLoading)
-            
-            HStack {
-                Text("Don't have an account yet?")
-                    .foregroundStyle(.gray)
-                Button("Sign up") {
-                    withAnimation {
-                        showSignUp = true
-                    }
-                }
-                    .foregroundStyle(.black)
-                    .fontWeight(.bold)
+        }) {
+            if userViewModel.isLoading {
+                ProgressView()
+                    .tint(.white)
+            } else {
+                Text("Sign in")
             }
+        }
+        .buttonStyle(PrimaryButtonStyle())
+        .disabled(userViewModel.isLoading)
+    }
+
+    var signUpTip: some View {
+        HStack {
+            Text("Don't have an account yet?")
+                .foregroundStyle(.gray)
+            Button("Sign up") {
+                withAnimation {
+                    showSignUp = true
+                }
+            }
+                .foregroundStyle(.black)
+                .fontWeight(.bold)
         }
     }
 }
@@ -97,6 +123,9 @@ struct SignInView: View {
 struct SignUpView: View {
     @Binding var showSignUp: Bool
     @EnvironmentObject var userViewModel: UserViewModel
+
+    @Binding var inputEmail: String
+    @Binding var inputPassword: String
 
     var body: some View {
         VStack(spacing: 32) {
@@ -114,16 +143,10 @@ struct SignUpView: View {
             }
             
             VStack(alignment: .leading, spacing: 8) {
-                Text("Full Name")
-                    .font(.subheadline)
-                    .fontWeight(.bold)
-                TextField("Enter your name...", text: $userViewModel.name)
-                    .textFieldStyle(CustomTextFieldStyle())
-                
                 Text("E-Mail Address")
                     .font(.subheadline)
                     .fontWeight(.bold)
-                TextField("Enter your email...", text: $userViewModel.email)
+                TextField("Enter your email...", text: $inputEmail)
                     .textFieldStyle(CustomTextFieldStyle())
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -131,7 +154,7 @@ struct SignUpView: View {
                 Text("Password")
                     .font(.subheadline)
                     .fontWeight(.bold)
-                SecureField("6 bits or more", text: $userViewModel.password)
+                SecureField("6 bits or more", text: $inputPassword)
                     .textFieldStyle(CustomTextFieldStyle())
             }
             .padding(.horizontal, 32)
@@ -144,7 +167,7 @@ struct SignUpView: View {
             
             Button(action: {
                 Task {
-                    try await userViewModel.signUpWithEmail()
+                    try await userViewModel.signUpWithEmail(email: inputEmail, password: inputPassword)
                 }
             }) {
                 if userViewModel.isLoading {
@@ -170,6 +193,7 @@ struct SignUpView: View {
             }
         }
     }
+
 }
 
 

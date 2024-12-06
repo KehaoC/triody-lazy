@@ -1,18 +1,21 @@
 import SwiftUI
+
 struct TaskCard: View {
-    let task: TaskModel
+    let task: TaskToPreview
+    let taskDetailId: Int?
 
-    @ObservedObject var taskViewModel: TaskViewModel
-    @ObservedObject var niumaAssigner: NiumaAssigner
+    // 用于获取新任务
+    @EnvironmentObject var taskManager: TaskManager
+    @EnvironmentObject var niumaManager: NiumaManager
 
-    @State private var showSubtaskCard = false
+    @State private var showDetailCard = false
     @State private var showDeleteAlert = false
     @State private var isLongPressed = false
 
     var body: some View {
         ZStack {
-            if !showSubtaskCard {
-                // 简略任务卡
+            if !showDetailCard {
+                // 简略任务卡, 在主页面上显示的简略形式
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         taskTitle
@@ -20,14 +23,17 @@ struct TaskCard: View {
                         statusLabel(isFinished: task.isFinished)
                     }
 
+                    // 任务描述
                     if !task.description.isEmpty {
                         taskDescription
                     }
 
-                    // NiumaTaskProgressView(task: task, niumaAssigner: niumaAssigner)
+                    // 任务进度
                     HStack {
-                        ForEach(niumaAssigner.filterNiumas(with: task.id!)) { niuma in
-                            NiumaInTask(niuma: niuma)
+                        // 处于该任务中的牛马们, 这里是简略形式
+                        ForEach(niumaManager.filterNiumasInTask(with: task.id), id: \.id) { niuma in
+                            // 点击后显示牛马的详细信息
+                            NiumaInTaskCard(niuma: niuma)
                         }
                     }
                     niumaDropArea
@@ -37,6 +43,7 @@ struct TaskCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
                 .gesture(
+                    // 长按删除
                     LongPressGesture(minimumDuration: 0.5)
                         .onChanged { _ in
                             isLongPressed = true
@@ -47,13 +54,17 @@ struct TaskCard: View {
                         }
                 )
                 .onTapGesture {
+                    // 点击显示详细任务卡
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        showSubtaskCard.toggle()
+                        Task {
+                            try await taskManager.getTaskDetail(taskId: task.id)
+                        }
+                        showDetailCard.toggle()
                     }
                 }
             } else {
                 // 详细任务卡
-                SubtaskCardView(task: task, isShowing: $showSubtaskCard)
+                DetailCard(task: taskManager.taskDetailWith(taskId: taskDetailId)!, isShowing: $showDetailCard)
                     .transition(.asymmetric(
                         insertion: .scale(scale: 0.9).combined(with: .opacity),
                         removal: .scale(scale: 0.9).combined(with: .opacity)
@@ -64,9 +75,10 @@ struct TaskCard: View {
         }
         .alert("Delete Task", isPresented: $showDeleteAlert) {
             Button("Delete", role: .destructive) {
+                // 删除任务
                 Task {
                     do {
-                        try await taskViewModel.deleteTask(taskId: task.id!)
+                        try await taskManager.deleteTask(taskId: task.id)
                     } catch {
                         print("Error deleting task: \(error)")
                     }
@@ -94,14 +106,34 @@ struct TaskCard: View {
                     .fill(isFinished ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
             )
             .onTapGesture {
+                // 点击修改任务状态
                 Task {
                     do {
-                        try await taskViewModel.modifyTaskStatus(taskId: task.id!, isFinished: !task.isFinished)
+                        try await taskManager.modifyTaskStatus(taskId: task.id, isFinished: !task.isFinished)
                     } catch {
                         print("Error modifying task status: \(error)")
                     }
                 }
             }
+    }
+
+    func niumaInShort(niuma: NiumaToPreviewInTask) -> some View {
+        // 在简略卡片列表中展现的，只有基本描述和进度
+        VStack {
+            Text(niuma.name)
+                .font(.subheadline)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .foregroundStyle(.primary)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.gray.opacity(0.2))
+                )
+            ProgressView(value: niuma.progress)
+        }
+        .onTapGesture {
+
+        }
     }
 
     var taskTitle: some View {
@@ -126,12 +158,12 @@ struct TaskCard: View {
 					.foregroundColor(.gray)
 			)
 	}
-
-
 }
 
-struct SubtaskCardView: View {
-    let task: TaskModel
+struct DetailCard: View {
+    // 展示额外信息
+    // 子任务描述，子任务进度，子任务分配的牛马
+    var task: TaskDetail
     @Binding var isShowing: Bool
     
     var body: some View {
@@ -143,6 +175,7 @@ struct SubtaskCardView: View {
                 Spacer()
                 Button {
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                        // 点击关闭详细任务卡
                         isShowing = false
                     }
                 } label: {
@@ -159,8 +192,8 @@ struct SubtaskCardView: View {
                     .foregroundStyle(.secondary)
             }
             
-            // Updated Subtasks Section
-            if let subtasks = task.subtasks, !subtasks.isEmpty {
+            // TODO: 什么时候获取详细的子任务信息？
+            if let subtasks = task.subtasksInTaskDetail, !subtasks.isEmpty {
                 Divider()
                 
                 Text("Subtasks")
@@ -168,8 +201,11 @@ struct SubtaskCardView: View {
                     .padding(.bottom, 4)
                 
                 VStack(spacing: 8) {
-                    ForEach(subtasks) { subtask in
-                        ExpandableSubtaskRow(subtask: subtask)
+                    if let subtasks = task.subtasksInTaskDetail {
+                        ForEach(subtasks, id: \.id) { subtask in
+                            // 子任务描述，子任务进度，子任务分配的牛马
+                            Text(subtask.description)
+                        }
                     }
                 }
             } else {
@@ -199,69 +235,3 @@ struct SubtaskCardView: View {
     #endif
 }
 
-struct ExpandableSubtaskRow: View {
-    let subtask: Subtask
-    @State private var isExpanded = false
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(subtask.description)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .opacity(subtask.isLazied ? 1.0 : 0.5)
-                
-                Spacer()
-                
-                isLaziedIcon(isLazied: subtask.isLazied)
-                
-                Image(systemName: "chevron.right")
-                    .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                    .foregroundStyle(.gray)
-            }
-            
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Agent: \(subtask.agentName)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
-                    if let result = subtask.result {
-                        Text("Result:")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Text(result)
-                            .font(.caption)
-                            .foregroundStyle(.primary)
-                            .padding(.leading, 8)
-                    }
-                }
-                .padding(.leading)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-        .padding()
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.green.opacity(subtask.isLazied ? 0.3 : 0))
-        )
-        .onTapGesture {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                isExpanded.toggle()
-            }
-        }
-        .animation(.easeInOut, value: subtask.isLazied)
-        .enableInjection()
-    }
-
-    #if DEBUG
-    @ObserveInjection var forceRedraw
-    #endif
-    
-    func isLaziedIcon(isLazied: Bool) -> some View {
-        Image(systemName: isLazied ? "checkmark.circle.fill" : "circle")
-            .foregroundStyle(isLazied ? .green : .gray.opacity(0.3))
-            .font(.system(size: 20))
-            .symbolEffect(.bounce, value: isLazied)
-    }
-}

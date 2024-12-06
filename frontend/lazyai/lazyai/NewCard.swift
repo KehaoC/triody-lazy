@@ -1,13 +1,23 @@
 import SwiftUI
 
-struct NewCardView: View {
-    @ObservedObject var taskViewModel: TaskViewModel
+struct NewCard: View {
+
+    @EnvironmentObject var taskManager: TaskManager
+    @EnvironmentObject var userViewModel: UserViewModel
+
+    // 卡片内容
     @State private var title: String = ""
     @State private var description: String = ""
+
+    // 卡片状态
     @State private var isEditingTitle = false
     @State private var isEditingDescription = false
+
+    // Toast 提示
     @State private var showToast = false
     @State private var toastInfo: String = ""
+
+    // 卡片动画
     @State private var cardOpacity: Double = 1.0
     @State private var offset: CGSize = .zero // Use a single offset variable
     
@@ -138,7 +148,8 @@ struct NewCardView: View {
                         showToast = true
                         print("create task: \(title)")
                         Task {
-                            try await taskViewModel.createTask(title: title, description: description)
+                            // 自动创建任务
+                            try await taskManager.createTaskAuto(title: title, description: description)
                         }
 
                         // 3. 重置卡片状态并归位
@@ -170,9 +181,7 @@ struct NewCardView: View {
                     }
                 }
         )
-        .onTapGesture {
-            // Remove this since we now have separate tap gestures
-        }
+
     }
 
     var controlBar: some View {
@@ -199,8 +208,4 @@ struct NewCardView: View {
             .animation(.spring(response: 0.5, dampingFraction: 0.7), value: showToast)
             .offset(y: showToast ? -180 : -220)
     }
-}
-
-#Preview {
-    NewCardView(taskViewModel: TaskViewModel())
 }

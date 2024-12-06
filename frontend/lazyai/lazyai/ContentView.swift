@@ -8,19 +8,17 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var taskViewModel = TaskViewModel()
-	@StateObject private var niumaAssigner = NiumaAssigner()
     @State private var selectedTab = 0
 
     var body: some View {
         NavigationStack {
             TabView(selection: $selectedTab) {
-				DesktopView(taskViewModel: taskViewModel, niumaAssigner: niumaAssigner)
+				Board()
                     .tabItem {
-                        Label("Desktop", systemImage: "desktopcomputer")
+                        Label("Board", systemImage: "desktopcomputer")
                     }
                     .tag(0)
-                NewCardView(taskViewModel: taskViewModel)
+                NewCard()
                     .tabItem {
                         Label("New", systemImage: "plus.circle.fill")
                     }

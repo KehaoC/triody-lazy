@@ -90,25 +90,29 @@ def require_auth(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         token = request.headers.get("Authorization")
+        
+        if not token:
+            raise APIError("No Authorization header found", status_code=401)
+            
         if token.startswith("Bearer "):
             token = token.split(" ")[1]
         else:
             raise APIError("Invalid token format, Bearer token is required", status_code=401)
         
-        if token != "mocktoken":
-            raise APIError("Invalid token", status_code=401)
-        else:
-            request.user_id = get_user_id_by_token(token)
+        request.user_id = get_user_id_by_token(token)
         
         return view_func(request, *args, **kwargs)
     return wrapper
 
 def get_user_id_by_token(token: str) -> Optional[str]:
     try:
-        # 创建 Supabase 客户端
+        # TODO: 从 settings 中获取
+        SUPABASE_URL = "https://eraslmtrxqzkjsdrsnjh.supabase.co"
+        SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVyYXNsbXRyeHF6a2pzZHJzbmpoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMzI3OTc2MiwiZXhwIjoyMDQ4ODU1NzYyfQ.jmYb6INqZ331sItH-89EWK3YAZ_OfTGKYedtygYTov4"
+
         supabase: Client = create_client(
-            settings.SUPABASE_URL,
-            settings.SUPABASE_KEY
+            SUPABASE_URL,
+            SUPABASE_KEY
         )
         
         # 获取用户信息

@@ -1,122 +1,9 @@
-//
-//  NiumaHouseView.swift
-//  LazyAI
-//
-//  Created by ALcohol_可豪 on 2024/12/1.
-//
-
-
 import SwiftUI
-
-struct NiumaHouseView: View {
-	// TODO: 牛马屋
-	// 牛马屋的牛马们可以被拖拽到任务卡上
-	// 用户可以骂牛马, 从而改进牛马
-	// 用户可以雇佣和升级更好的牛马
-	// 用户可以解雇牛马
-	// 用户可以查看牛马的属性
-	@ObservedObject var niumaAssigner: NiumaAssigner
-
-	init() {
-		self.niumaAssigner = NiumaAssigner()
-	}
-
-	var body: some View {
-		ScrollView(.horizontal, showsIndicators: true) {
-			HStack(spacing: 12) {
-				ForEach(niumaAssigner.niumas) { niuma in
-					NiumaTagView(niuma: niuma)
-				}
-			}
-		}
-		.padding()
-		.enableInjection()
-	}
-
-	#if DEBUG
-	@ObserveInjection var forceRedraw
-	#endif
-
-	struct NiumaTagView: View {
-		let niuma: NiumaModel
-		@State private var showNiumaTagDetail: Bool = false
-
-		init(niuma: NiumaModel) {
-			self.niuma = niuma
-		}
-
-		var body: some View {
-			HStack {
-				niumaName
-				niumaAvatar
-			}
-			.padding()
-			.background(
-				RoundedRectangle(cornerRadius: 12)
-					.fill(
-						LinearGradient(
-							colors: niuma.taskId == nil ? 
-								[Color.blue.opacity(0.2), Color.indigo.opacity(0.2)] :
-								[Color.gray.opacity(0.3), Color.gray.opacity(0.3)],
-							startPoint: .topLeading,
-							endPoint: .bottomTrailing
-						)
-					)
-			)
-			.overlay(
-				RoundedRectangle(cornerRadius: 12)
-					.stroke(niuma.taskId == nil ? Color.blue.opacity(0.5) : Color.gray.opacity(0.5), lineWidth: 2)
-			)
-			.clipShape(RoundedRectangle(cornerRadius: 12))
-			.shadow(color: niuma.taskId == nil ? .blue.opacity(0.2) : .gray.opacity(0.2), radius: 5, x: 0, y: 2)
-			.opacity(niuma.taskId == nil ? 1.0 : 0.7)
-			.onTapGesture {
-				showNiumaTagDetail = true
-			}
-			.popover(isPresented: $showNiumaTagDetail) {
-				NiumaTagDetailView(niuma: niuma)
-			}
-		    .enableInjection()
-		}
-
-		#if DEBUG
-		@ObserveInjection var forceRedraw
-		#endif
-
-		var niumaName: some View {
-			Text(niuma.name)
-				.font(.system(size: 16, weight: .bold, design: .monospaced))
-				.foregroundColor(niuma.taskId == nil ? .blue : .gray)
-		}
-
-		var niumaAvatar: some View {
-			Image(systemName: niuma.avatar)
-				.foregroundStyle(.secondary)
-		}
-	}
-}
-
-struct NiumaTagDetailView: View {
-	let niuma: NiumaModel
-
-	var body: some View {
-		VStack {
-			Text(niuma.description)
-		}
-		.padding()
-	    .enableInjection()
-	}
-
-	#if DEBUG
-	@ObserveInjection var forceRedraw
-	#endif
-}
-
-struct NiumaInTask: View {
-	let niuma: NiumaModel
+struct NiumaInTaskCard: View {
+	let niuma: NiumaDetail
 	@State private var showPopoverDetail: Bool = false
 
-	init(niuma: NiumaModel) {
+	init(niuma: NiumaDetail) {
 		self.niuma = niuma
 	}
 
@@ -135,7 +22,7 @@ struct NiumaInTask: View {
 	@ObserveInjection var forceRedraw
 	#endif
 
-	func progressBar(for niuma: NiumaModel) -> some View {
+	func progressBar(for niuma: NiumaDetail) -> some View {
 		ProgressView(value: niuma.progress)
 			.progressViewStyle(LinearProgressViewStyle())
 	}
@@ -146,8 +33,7 @@ struct NiumaInTask: View {
 				Text(niuma.name)
 					.font(.system(size: 16, weight: .bold, design: .rounded))
 					.italic()
-				Image(systemName: niuma.avatar)
-					.foregroundStyle(.secondary)
+				NiumaAvatar(name: niuma.name)
 				if niuma.progress >= 1.0 {
 					Image(systemName: "checkmark.circle.fill")
 						.foregroundStyle(.green)
@@ -191,7 +77,6 @@ struct NiumaInTask: View {
 				VStack(spacing: 4) {
 					dynamicProgressBar(for: niuma)
 						.frame(height: 8)
-						.padding(.horizontal, 16)
 					
 					Text("\(Int(niuma.progress * 100))%")
 						.font(.caption)
@@ -320,8 +205,7 @@ struct NiumaInTask: View {
 	}
 
 	var roundedNiumaAvatar: some View {
-		Image(systemName: niuma.avatar)
-			.foregroundStyle(.secondary)
+		NiumaAvatar(name: niuma.name)
 			.symbolEffect(.bounce, value: 1.5)
 	}	
 
@@ -337,7 +221,7 @@ struct NiumaInTask: View {
 			.foregroundStyle(.secondary)
 	}
 
-	func dynamicProgressBar(for niuma: NiumaModel) -> some View {
+	func dynamicProgressBar(for niuma: NiumaDetail) -> some View {
 		ProgressView(value: niuma.progress)
 			.progressViewStyle(LinearProgressViewStyle())
 			.animation(.easeInOut, value: niuma.progress)
