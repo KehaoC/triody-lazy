@@ -1,15 +1,8 @@
-from django.shortcuts import render
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from django.db import transaction  # For atomic operations
-
 from team.agents import Team
-from team.models import Task, Subtask ,User # 导入模型
+from team.models import Task, Subtask # 导入模型
 from niuma.models import Niuma
-from core.utils import auth_and_error_handler, api_response, require_auth
-
-import json
+from core.utils import auth_and_error_handler, api_response
+from core.utils.api import APIError
 
 @auth_and_error_handler(methods=["GET"])
 def get_tasks_to_preview(request):
@@ -39,7 +32,6 @@ def get_task_detail(request):
     task = Task.objects.filter(task_id=task_id, user_id=request.user_id).first()
     if not task:
         raise APIError("Task not found", status_code=404)
-    
     # 2. 获取任务的子任务
     subtasks_in_task_detail = []
     subtasks = Subtask.objects.filter(task_id=task_id)
@@ -101,9 +93,6 @@ def create_task(request):
         # TODO: 等待用户手动运行
         team = Team(task)  # 只创建，不运行
     return api_response(data, "Task created successfully")
-
-
-
 
 @auth_and_error_handler(methods=["DELETE"])
 def delete_task(request):

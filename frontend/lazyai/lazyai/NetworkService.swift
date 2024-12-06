@@ -13,6 +13,7 @@ class NetworkService{
 		self.token = "Bearer \(accessToken)"
 	}
 	
+    // MARK: - Team - task related
 	func getTasksToPreview() async throws -> [TaskToPreview] {
         let endpoint = "team/get_tasks_to_preview"
         let method = "GET"
@@ -38,7 +39,7 @@ class NetworkService{
 		return result ?? nil
 	}
 	
-    // TODO: 创建任务, 自动或者手动逻辑继续实现
+    // TODO: 创建任务, 自动者手动逻辑继续实现
 	func createTask(title: String, description: String, auto: Bool) async throws -> TaskToPreview? {
         let endpoint = "team/create_task"
         let method = "POST"
@@ -77,6 +78,7 @@ class NetworkService{
 		print("modifyTaskStatus")
 	}
 	
+    // MARK: - Niuma related
 	func getAllNiuma() async throws -> [Niuma]? {
         let endpoint = "niuma/get_all_niuma"
         let method = "GET"
@@ -124,11 +126,10 @@ class NetworkService{
 		print("removeNiumaFromTask")
     }
 
-    // MARK: - request 代码重用
-    private func request<T: Decodable>(to endpoint: String, with method: String, loading body: [String: Any]? = nil) async throws -> T? {
-        // 请求函数
+    // MARK: - request 
+    private func request<T: Codable>(to endpoint: String, with method: String, loading body: [String: Any]? = nil) async throws -> T? {
         let url = URL(string: "\(baseUrl)\(endpoint)")!
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue(token, forHTTPHeaderField: "Authorization")
@@ -146,17 +147,30 @@ class NetworkService{
 
         do {
             let decoder = JSONDecoder()
-
-            // 将返回的 json 中的下划线转换为驼峰命名
             decoder.keyDecodingStrategy = .convertFromSnakeCase
-            let result = try decoder.decode(T.self, from: data)
-            return result
+            
+            // 解码为 APIResponse
+            let apiResponse = try decoder.decode(APIResponse<T>.self, from: data)
+            
+            // 检查状态
+            guard apiResponse.status == "success" else {
+                throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: apiResponse.message])
+            }
+            
+            return apiResponse.data
         } catch {
             print("Error decoding response: \(error)")
-            return nil
+            throw error
         }
     }
 }
 
 // Add this struct at the bottom of the file
 private struct EmptyResponse: Codable {}
+
+// 添加通用响应模型
+struct APIResponse<T: Codable>: Codable {
+    let status: String
+    let message: String
+    let data: T?
+}
