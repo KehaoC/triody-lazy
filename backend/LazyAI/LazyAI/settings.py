@@ -11,6 +11,20 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+from celery.schedules import crontab  # 添加这行导入
+
+# ... 其他导入和配置 ...
+
+CELERY_BEAT_SCHEDULE = {
+    'process-task-queues': {
+        'task': 'team.taskspool_priority.TaskPool.periodic_schedule',
+        'schedule': crontab(minute='*/1'),  # 每分钟执行一次
+        'options': {
+            'queue': 'celery',
+            'expires': 55
+        }
+    }
+}
 # import environ
 
 # env = environ.Env()
@@ -161,8 +175,84 @@ SUPABASE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 
 # Celery配置
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/1'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Shanghai'  # 设置时区
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+
+# # 队列设置
+# CELERY_QUEUES = {
+#     'ready_tasks': {
+#         'exchange': 'ready_tasks',
+#         'exchange_type': 'direct',
+#         'routing_key': 'ready_tasks'
+#     },
+#     'waiting_tasks': {
+#         'exchange': 'waiting_tasks',
+#         'exchange_type': 'direct',
+#         'routing_key': 'waiting_tasks'
+#     }
+# }
+
+# # 任务路由
+# CELERY_ROUTES = {
+#     'team.taskspool.TaskPool.schedule': {'queue': 'ready_tasks'},
+#     'team.taskspool.TaskPool.wait': {'queue': 'waiting_tasks'},
+# }
+
+
+# 启用优先级支持
+CELERY_ENABLE_UTC = True
+CELERY_ACKS_LATE = True
+CELERYD_PREFETCH_MULTIPLIER = 1  # 重要：确保高优先级任务能够被及时处理
+
+# 队列设置
+CELERY_QUEUES = {
+    'high_priority': {
+        'exchange': 'high_priority',
+        'exchange_type': 'direct',
+        'routing_key': 'high_priority',
+        'queue_arguments': {'x-max-priority': 10}
+    },
+    'normal_priority': {
+        'exchange': 'normal_priority',
+        'exchange_type': 'direct',
+        'routing_key': 'normal_priority',
+        'queue_arguments': {'x-max-priority': 10}
+    },
+    'low_priority': {
+        'exchange': 'low_priority',
+        'exchange_type': 'direct',
+        'routing_key': 'low_priority',
+        'queue_arguments': {'x-max-priority': 10}
+    },
+    'waiting_tasks': {
+        'exchange': 'waiting_tasks',
+        'exchange_type': 'direct',
+        'routing_key': 'waiting_tasks'
+    }
+}
+
+# 路由配置
+CELERY_TASK_ROUTES = {
+    # 'team.tasks.add_team': {'queue': 'default'},
+    'team.tasks.periodic_schedule': {'queue': 'celery'},  # 建议添加：明确指定 periodic_schedule 的队列
+    # 'team.tasks.wait': {'queue': 'waiting_tasks'}  # 建议添加：明确指定 wait 任务的队列
+}
+
+# # Celery Worker 配置
+# CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # 控制 worker 预取任务数量
+# CELERY_WORKER_MAX_TASKS_PER_CHILD = 100  # 每个 worker 进程最多处理的任务数
+# CELERY_WORKER_CONCURRENCY = 4  # worker 进程数
+
+# Celery Beat 配置
+CELERY_BEAT_SCHEDULE = {
+    'process-task-queues': {
+        'task': 'team.tasks.periodic_schedule',
+        'schedule': crontab(minute='*/1'),  # 每分钟执行一次
+        'options': {'queue': 'celery'},  # Beat任务使用默认队列
+    },
+}

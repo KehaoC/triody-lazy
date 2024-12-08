@@ -12,7 +12,7 @@ app = Celery('LazyAI')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # 自动发现所有Django应用中的tasks.py文件
-app.autodiscover_tasks()
+app.autodiscover_tasks(['team'])
 
 @app.task(bind=True)
 def debug_task(self):

@@ -226,6 +226,9 @@ class Team:
             self.task.is_finished = True
             self.task.all_subtasks_lazied = all_subtasks_lazied
             self.task.save()
+    def __lt__(self, other):
+        # 实现排序逻辑，例如基于优先级或创建时间
+        return self.task_id < other.task_id
     
     def print_result(self):
         beautyprint(self.subtasks)
